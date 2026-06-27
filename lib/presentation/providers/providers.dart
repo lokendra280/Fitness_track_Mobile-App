@@ -1,13 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  providers.dart  — Phase 3 unified provider file
-//  All providers in one place so every screen only needs one import.
-// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/core/utils/auth_service.dart';
 import 'package:habitflow/core/utils/notification_service.dart';
 import 'package:habitflow/core/utils/sync_service.dart';
+import 'package:habitflow/data/models/habit_templated.dart';
 import 'package:habitflow/data/repositories/challenge_repository.dart';
+import 'package:habitflow/data/repositories/goal_repository.dart';
 import 'package:habitflow/data/repositories/habit_repository.dart';
 import 'package:habitflow/data/repositories/reminder_repository.dart';
 import 'package:habitflow/domain/entities/entities.dart';
@@ -15,11 +13,13 @@ import 'package:habitflow/domain/entities/entities.dart';
 // ══════════════════════════════════════════════════════════════════════════════
 //  UTILITY
 // ══════════════════════════════════════════════════════════════════════════════
+
 void unawaited(Future<void> f) => f.catchError((_) {});
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  REPOSITORY SINGLETONS
 // ══════════════════════════════════════════════════════════════════════════════
+
 final authServiceProvider = Provider<AuthService>((_) => AuthService());
 final syncServiceProvider = Provider<SyncService>((_) => SyncService());
 final habitRepoProvider = Provider<HabitRepository>((_) => HabitRepository());
@@ -28,14 +28,19 @@ final reminderRepoProvider =
 final challengeRepoProvider =
     Provider<ChallengeRepository>((_) => ChallengeRepository());
 
+// ── Phase 1 ───────────────────────────────────────────────────────────────────
+final goalRepoProvider = Provider<GoalRepository>((_) => GoalRepository());
+
 // ══════════════════════════════════════════════════════════════════════════════
 //  THEME
 // ══════════════════════════════════════════════════════════════════════════════
+
 final themeModeProvider = StateProvider<bool>((_) => false);
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════════════════════════════════
+
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AppAuthState>((ref) => AuthNotifier(
           ref.watch(authServiceProvider),
@@ -43,33 +48,6 @@ final authStateProvider =
           ref.watch(habitRepoProvider),
         ));
 
-/// Renamed to AppAuthState to avoid clash with Supabase's AuthState type.
-// class AppAuthState {
-//   final AuthStatus status;
-//   final AppUser? user;
-//   final String? error;
-
-//   const AppAuthState({required this.status, this.user, this.error});
-//   const AppAuthState.loading()
-//       : status = AuthStatus.loading,
-//         user = null,
-//         error = null;
-//   const AppAuthState.unauthenticated()
-//       : status = AuthStatus.unauthenticated,
-//         user = null,
-//         error = null;
-//   AppAuthState.authenticated(AppUser u)
-//       : status = AuthStatus.authenticated,
-//         user = u,
-//         error = null;
-//   AppAuthState.withError(String e)
-//       : status = AuthStatus.unauthenticated,
-//         user = null,
-//         error = e;
-//   bool get isLoading => status == AuthStatus.loading;
-//   bool get isAuthenticated => status == AuthStatus.authenticated;
-//   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
-// }
 class AppAuthState {
   final AuthStatus status;
   final AppUser? user;
@@ -146,16 +124,9 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     String? username,
   }) async {
     state = const AppAuthState.loading();
-
     try {
-      await _auth.signUp(
-        email: email,
-        password: password,
-        username: username,
-      );
-
+      await _auth.signUp(email: email, password: password, username: username);
       await _auth.sendOtp(email: email);
-
       state = AppAuthState.otpSent(email);
     } catch (e) {
       state = AppAuthState.withError(_friendly(e));
@@ -176,10 +147,8 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     }
   }
 
-  // ── OTP (passwordless / email verification) ──────────────────────────────────
-  Future<void> sendOtp(String email) => _auth.sendOtp(
-        email: email.trim().toLowerCase(),
-      );
+  Future<void> sendOtp(String email) =>
+      _auth.sendOtp(email: email.trim().toLowerCase());
 
   Future<String?> verifyOtp(String email, String otp) async {
     state = const AppAuthState.loading();
@@ -188,13 +157,11 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
         email: email.trim().toLowerCase(),
         otp: otp,
       );
-
       if (user != null) {
         state = AppAuthState.authenticated(user);
         unawaited(_repo.syncWithCloud(user.id, _sync));
-        return null; // ← success
+        return null;
       }
-
       state = AppAuthState.withError('Verification failed');
       return 'Verification failed';
     } catch (e) {
@@ -250,6 +217,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 // ══════════════════════════════════════════════════════════════════════════════
 //  SYNC
 // ══════════════════════════════════════════════════════════════════════════════
+
 final syncStateProvider =
     StateNotifierProvider<SyncNotifier, SyncState>((ref) => SyncNotifier(
           ref.watch(syncServiceProvider),
@@ -296,6 +264,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
 // ══════════════════════════════════════════════════════════════════════════════
 //  HABITS
 // ══════════════════════════════════════════════════════════════════════════════
+
 final habitListProvider =
     StateNotifierProvider<HabitListNotifier, AsyncValue<List<Habit>>>(
   (ref) => HabitListNotifier(
@@ -317,39 +286,6 @@ class HabitListNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
 
   void _load() => state = AsyncValue.data(_repo.getHabits());
 
-  // Future<void> addHabit(
-  //     {required String name,
-  //     required String icon,
-  //     required int targetPerDay,
-  //     required int colorIndex,
-  //     required String reminderTime,
-  //     required bool reminderEnabled,
-  //     required String frequency}) async {
-  //   final habit = await _repo.addHabit(
-  //     name: name,
-  //     icon: icon,
-  //     targetPerDay: targetPerDay,
-  //     colorIndex: colorIndex,
-  //     reminderTime: reminderTime,
-  //     reminderEnabled: reminderEnabled,
-  //     frequency: frequency,
-  //   );
-
-  //   await NotificationService.scheduleReminder(
-  //     Reminder(
-  //       id: 'habit_${habit.id}',
-  //       habitId: habit.id,
-  //       time: ,
-  //       frequency: ReminderFrequency.daily,
-  //       createdAt: habit.createdAt,
-  //     ),
-  //     habitName: habit.name,
-  //     habitIcon: habit.icon,
-  //   );
-
-  //   _load();
-  //   _push();
-  // }
   Future<void> addHabit({
     required String name,
     required String icon,
@@ -360,12 +296,6 @@ class HabitListNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     required String frequency,
   }) async {
     try {
-      print('🟢 [addHabit] START');
-      print('👉 name: $name');
-      print('👉 reminderEnabled: $reminderEnabled');
-      print('👉 reminderTime: $reminderTime');
-      print('👉 frequency: $frequency');
-
       final habit = await _repo.addHabit(
         name: name,
         icon: icon,
@@ -376,53 +306,32 @@ class HabitListNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
         frequency: frequency,
       );
 
-      print('🟡 [addHabit] HABIT SAVED: ${habit.id}');
-
-      if (!reminderEnabled) {
-        print('🔴 Reminder disabled → skipping notification');
-      } else {
+      if (reminderEnabled && reminderTime.isNotEmpty) {
         final parts = reminderTime.split(':');
-
-        if (parts.length != 2) {
-          print('❌ Invalid reminderTime format: $reminderTime');
-          return;
+        if (parts.length == 2) {
+          final hour = int.tryParse(parts[0]);
+          final minute = int.tryParse(parts[1]);
+          if (hour != null && minute != null) {
+            await NotificationService.scheduleReminder(
+              Reminder(
+                id: 'habit_${habit.id}',
+                habitId: habit.id,
+                time: TimeOfDay(hour: hour, minute: minute),
+                frequency: ReminderFrequency.daily,
+                createdAt: habit.createdAt,
+                isEnabled: true,
+              ),
+              habitName: habit.name,
+              habitIcon: habit.icon,
+            );
+          }
         }
-
-        final hour = int.tryParse(parts[0]);
-        final minute = int.tryParse(parts[1]);
-
-        if (hour == null || minute == null) {
-          print('❌ Failed to parse time: $reminderTime');
-          return;
-        }
-
-        final time = TimeOfDay(hour: hour, minute: minute);
-
-        print('🟣 Scheduling notification at $time');
-
-        await NotificationService.scheduleReminder(
-          Reminder(
-            id: 'habit_${habit.id}',
-            habitId: habit.id,
-            time: time,
-            frequency: ReminderFrequency.daily,
-            createdAt: habit.createdAt,
-            isEnabled: true,
-          ),
-          habitName: habit.name,
-          habitIcon: habit.icon,
-        );
-
-        print('🟢 Notification scheduled successfully');
       }
 
       _load();
       _push();
-
-      print('🟢 [addHabit] COMPLETE');
     } catch (e, stack) {
-      print('🔥 ERROR in addHabit: $e');
-      print(stack);
+      debugPrint('ERROR in addHabit: $e\n$stack');
     }
   }
 
@@ -451,6 +360,7 @@ class HabitListNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
 // ══════════════════════════════════════════════════════════════════════════════
 //  CHECKINS
 // ══════════════════════════════════════════════════════════════════════════════
+
 final checkinProvider =
     StateNotifierProvider<CheckinNotifier, AsyncValue<List<Checkin>>>(
   (ref) => CheckinNotifier(
@@ -472,7 +382,7 @@ class CheckinNotifier extends StateNotifier<AsyncValue<List<Checkin>>> {
 
   void _load() => state = AsyncValue.data(_repo.getTodayCheckins());
 
-  /// Returns true if habit just became fully complete for today.
+  /// Returns true if the habit just became fully complete for today.
   Future<bool> checkIn(String habitId, int targetPerDay) async {
     if (_repo.getTodayCheckins(habitId: habitId).length >= targetPerDay) {
       return false;
@@ -495,12 +405,14 @@ final todayCountProvider = Provider.family<int, String>((ref, habitId) {
   return ref.watch(habitRepoProvider).getTodayCheckins(habitId: habitId).length;
 });
 
-// ── Per-habit checkins on a specific date ────────────────────────────────────
+// ── Per-habit checkins on a specific date ─────────────────────────────────────
 final dateCheckinsProvider =
     Provider.family<List<Checkin>, ({String habitId, String dateKey})>(
   (ref, args) {
     ref.watch(checkinProvider);
-    return ref.watch(habitRepoProvider).getTodayCheckins(habitId: args.habitId);
+    return ref
+        .watch(habitRepoProvider)
+        .getCheckinsForDate(args.dateKey, habitId: args.habitId);
   },
 );
 
@@ -545,6 +457,7 @@ final longestEverProvider = Provider<int>((ref) {
 // ══════════════════════════════════════════════════════════════════════════════
 //  REMINDERS
 // ══════════════════════════════════════════════════════════════════════════════
+
 final reminderListProvider =
     StateNotifierProvider<ReminderNotifier, AsyncValue<List<Reminder>>>(
   (ref) => ReminderNotifier(ref.watch(reminderRepoProvider)),
@@ -577,7 +490,6 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     );
     await NotificationService.scheduleReminder(r,
         habitName: habitName, habitIcon: habitIcon);
-    // await NotificationService.scheduleReminder(habitName, habitIcon);
     _load();
     return r;
   }
@@ -606,9 +518,7 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     _load();
   }
 
-  Future<void> pushPending(String userId) async {
-    await _repo.pushPending(userId);
-  }
+  Future<void> pushPending(String userId) async => _repo.pushPending(userId);
 
   void refresh() => _load();
 }
@@ -621,7 +531,7 @@ final habitRemindersProvider = Provider.family<List<Reminder>, String>(
   },
 );
 
-// ── Count of enabled reminders (nav badge) ────────────────────────────────────
+// ── Count of enabled reminders (nav badge) ───────────────────────────────────
 final activeReminderCountProvider = Provider<int>((ref) {
   final all = ref.watch(reminderListProvider).value ?? [];
   return all.where((r) => r.isEnabled).length;
@@ -642,9 +552,8 @@ class NotifPermissionNotifier extends StateNotifier<bool> {
     _check();
   }
 
-  Future<void> _check() async {
-    state = await NotificationService.requestPermission();
-  }
+  Future<void> _check() async =>
+      state = await NotificationService.requestPermission();
 
   Future<bool> request() async {
     final granted = await NotificationService.requestPermission();
@@ -658,6 +567,7 @@ class NotifPermissionNotifier extends StateNotifier<bool> {
 // ══════════════════════════════════════════════════════════════════════════════
 //  CHALLENGES
 // ══════════════════════════════════════════════════════════════════════════════
+
 final challengeListProvider =
     StateNotifierProvider<ChallengeNotifier, AsyncValue<List<Challenge>>>(
   (ref) => ChallengeNotifier(ref.watch(challengeRepoProvider)),
@@ -707,8 +617,6 @@ class ChallengeNotifier extends StateNotifier<AsyncValue<List<Challenge>>> {
     _load();
   }
 
-  /// Evaluate active challenges against current streaks.
-  /// Returns challenges that changed status (for celebratory UI).
   Future<List<Challenge>> evaluate(
       Map<String, int> currentStreaksByHabit) async {
     final changed = await _repo.evaluate(currentStreaksByHabit);
@@ -721,9 +629,7 @@ class ChallengeNotifier extends StateNotifier<AsyncValue<List<Challenge>>> {
     _load();
   }
 
-  Future<void> pushPending(String userId) async {
-    await _repo.pushPending(userId);
-  }
+  Future<void> pushPending(String userId) async => _repo.pushPending(userId);
 
   void refresh() => _load();
 }
@@ -744,11 +650,9 @@ final failedChallengesProvider = Provider<List<Challenge>>((ref) {
   return all.where((c) => c.status == ChallengeStatus.failed).toList();
 });
 
-// ── Count for nav badge ───────────────────────────────────────────────────────
 final activeChallengeCountProvider =
     Provider<int>((ref) => ref.watch(activeChallengesProvider).length);
 
-// ── Challenges linked to a specific habit ─────────────────────────────────────
 final habitChallengesProvider =
     Provider.family<List<Challenge>, String>((ref, habitId) {
   final all = ref.watch(challengeListProvider).value ?? [];
@@ -759,12 +663,208 @@ final habitChallengesProvider =
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  COMBINED SYNC ORCHESTRATOR
-//  Call after login or app resume to sync reminders + challenges together.
+//  PHASE 1 — HABIT TEMPLATES
+//  Pure in-memory, no Hive, no network — just the seed list.
 // ══════════════════════════════════════════════════════════════════════════════
-class P3SyncOrchestrator {
+
+/// All available templates.
+final templateListProvider = Provider<List<HabitTemplate>>(
+  (_) => HabitTemplate.seeds,
+);
+
+/// Currently selected category chip ('All' by default).
+final templateCategoryProvider = StateProvider<String>((_) => 'All');
+
+/// Filtered view of templates based on selected category.
+final filteredTemplatesProvider = Provider<List<HabitTemplate>>((ref) {
+  final all = ref.watch(templateListProvider);
+  final cat = ref.watch(templateCategoryProvider);
+  return cat == 'All' ? all : all.where((t) => t.category == cat).toList();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PHASE 1 — GOALS
+// ══════════════════════════════════════════════════════════════════════════════
+
+final goalListProvider =
+    StateNotifierProvider<GoalNotifier, AsyncValue<List<Goal>>>(
+  (ref) => GoalNotifier(
+    ref.watch(goalRepoProvider),
+    ref.watch(authStateProvider),
+  ),
+);
+
+class GoalNotifier extends StateNotifier<AsyncValue<List<Goal>>> {
+  final GoalRepository _repo;
+  final AppAuthState _auth;
+
+  GoalNotifier(this._repo, this._auth) : super(const AsyncValue.loading()) {
+    _load();
+  }
+
+  void _load() => state = AsyncValue.data(_repo.getAll());
+
+  Future<void> create({
+    required String title,
+    required String description,
+    required String icon,
+    required int colorIndex,
+    required List<String> linkedHabitIds,
+    required int targetDays,
+    required GoalPeriod period,
+  }) async {
+    await _repo.create(
+      title: title,
+      description: description,
+      icon: icon,
+      colorIndex: colorIndex,
+      linkedHabitIds: linkedHabitIds,
+      targetDays: targetDays,
+      period: period,
+    );
+    _load();
+    _push();
+  }
+
+  Future<void> updateGoal(Goal g) async {
+    await _repo.update(g);
+    _load();
+    _push();
+  }
+
+  Future<void> updateStatus(String id, GoalStatus status) async {
+    await _repo.updateStatus(id, status);
+    _load();
+    _push();
+  }
+
+  Future<void> delete(String id) async {
+    await _repo.delete(id);
+    _load();
+    _push();
+  }
+
+  /// Evaluates goals against current habit streaks. Returns changed goals.
+  Future<List<Goal>> evaluate(Map<String, int> streaks) async {
+    final changed = await _repo.evaluate(streaks);
+    if (changed.isNotEmpty) _load();
+    return changed;
+  }
+
+  Future<void> syncWithCloud(String userId) async {
+    await _repo.fullSync(userId);
+    _load();
+  }
+
+  Future<void> pushPending(String userId) async => _repo.pushPending(userId);
+
+  void refresh() => _load();
+
+  void _push() {
+    final uid = _auth.user?.id;
+    if (uid != null) unawaited(_repo.pushPending(uid));
+  }
+}
+
+// ── Derived goal slices ───────────────────────────────────────────────────────
+
+final activeGoalsProvider = Provider<List<Goal>>((ref) {
+  final all = ref.watch(goalListProvider).value ?? [];
+  return all.where((g) => g.status == GoalStatus.active).toList();
+});
+
+final completedGoalsProvider = Provider<List<Goal>>((ref) {
+  final all = ref.watch(goalListProvider).value ?? [];
+  return all.where((g) => g.status == GoalStatus.completed).toList();
+});
+
+final activeGoalCountProvider =
+    Provider<int>((ref) => ref.watch(activeGoalsProvider).length);
+
+/// All active goals that reference a specific habit.
+final habitGoalsProvider = Provider.family<List<Goal>, String>((ref, habitId) {
+  final all = ref.watch(goalListProvider).value ?? [];
+  return all
+      .where((g) =>
+          g.linkedHabitIds.contains(habitId) && g.status == GoalStatus.active)
+      .toList();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PHASE 1 — HEATMAP (pure derivation, zero new storage)
+// ══════════════════════════════════════════════════════════════════════════════
+
+/// 84-day heatmap (12 weeks), oldest → newest.
+/// Rebuilds whenever habits or checkins change.
+final heatmapProvider = Provider<List<HeatmapCell>>((ref) {
+  final habits = ref.watch(habitListProvider).value ?? [];
+  final repo = ref.watch(habitRepoProvider);
+  ref.watch(checkinProvider); // dependency so cells update on every check-in
+
+  final today = DateTime.now();
+  return List.generate(84, (i) {
+    final date = today.subtract(Duration(days: 83 - i));
+    final dateKey = _dateKey(date);
+    var done = 0;
+    for (final h in habits) {
+      if (repo.getCheckinsForDate(dateKey, habitId: h.id).length >=
+          h.targetPerDay) {
+        done++;
+      }
+    }
+    return HeatmapCell(
+      date: date,
+      completedHabits: done,
+      totalHabits: habits.length,
+    );
+  });
+});
+
+/// One calendar month of HeatmapCells. Parameterised by the first day of
+/// the month (year + month only; day is ignored).
+final monthHeatmapProvider =
+    Provider.family<List<HeatmapCell>, DateTime>((ref, month) {
+  final habits = ref.watch(habitListProvider).value ?? [];
+  final repo = ref.watch(habitRepoProvider);
+  ref.watch(checkinProvider);
+
+  final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+  return List.generate(daysInMonth, (i) {
+    final date = DateTime(month.year, month.month, i + 1);
+    final dateKey = _dateKey(date);
+    var done = 0;
+    for (final h in habits) {
+      if (repo.getCheckinsForDate(dateKey, habitId: h.id).length >=
+          h.targetPerDay) {
+        done++;
+      }
+    }
+    return HeatmapCell(
+      date: date,
+      completedHabits: done,
+      totalHabits: habits.length,
+    );
+  });
+});
+
+/// Drives the month navigation in CalendarHeatmapScreen.
+final calendarMonthProvider = StateProvider<DateTime>(
+  (_) => DateTime(DateTime.now().year, DateTime.now().month),
+);
+
+// ── Private helper ────────────────────────────────────────────────────────────
+String _dateKey(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  COMBINED SYNC ORCHESTRATOR
+//  Covers reminders + challenges (Phase 3) + goals (Phase 1).
+//  Call after login or app resume.
+// ══════════════════════════════════════════════════════════════════════════════
+
+class FullSyncOrchestrator {
   final Ref _ref;
-  P3SyncOrchestrator(this._ref);
+  FullSyncOrchestrator(this._ref);
 
   Future<void> syncAll(
     String userId, {
@@ -776,6 +876,7 @@ class P3SyncOrchestrator {
           .read(reminderListProvider.notifier)
           .syncWithCloud(userId, habitNames, habitIcons),
       _ref.read(challengeListProvider.notifier).syncWithCloud(userId),
+      _ref.read(goalListProvider.notifier).syncWithCloud(userId), // Phase 1
     ]);
   }
 
@@ -783,9 +884,15 @@ class P3SyncOrchestrator {
     await Future.wait([
       _ref.read(reminderListProvider.notifier).pushPending(userId),
       _ref.read(challengeListProvider.notifier).pushPending(userId),
+      _ref.read(goalListProvider.notifier).pushPending(userId), // Phase 1
     ]);
   }
 }
 
+final fullSyncProvider =
+    Provider<FullSyncOrchestrator>((ref) => FullSyncOrchestrator(ref));
+
+/// Kept for backwards compatibility — points at the same orchestrator.
+/// Replace call sites with [fullSyncProvider] gradually.
 final p3SyncProvider =
-    Provider<P3SyncOrchestrator>((ref) => P3SyncOrchestrator(ref));
+    Provider<FullSyncOrchestrator>((ref) => ref.watch(fullSyncProvider));
