@@ -14,17 +14,27 @@ class CommonSvgWidget extends StatelessWidget {
     this.color,
   });
 
+  bool get _isSvg => svgName.toLowerCase().endsWith('.svg');
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(1),
-      child: SvgPicture.asset(
-        svgName,
-        height: height,
-        width: width,
-        colorFilter:
-            color != null ? ColorFilter.mode(color!, BlendMode.srcIn) : null,
-      ),
+      child: _isSvg
+          ? SvgPicture.asset(
+              svgName,
+              height: height,
+              width: width,
+              colorFilter: color != null
+                  ? ColorFilter.mode(color!, BlendMode.srcIn)
+                  : null,
+            )
+          : Image.asset(
+              svgName,
+              height: height,
+              width: width,
+              color: color,
+            ),
     );
   }
 }

@@ -63,25 +63,25 @@ class _HabitFlowAppState extends ConsumerState<HabitFlowApp> {
   void initState() {
     super.initState();
     // Defer until after first frame so native plugin channels are ready.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initHomeWidget());
+    // WidgetsBinding.instance.addPostFrameCallback((_) => _initHomeWidget());
   }
 
-  Future<void> _initHomeWidget() async {
-    try {
-      await HomeWidget.registerBackgroundCallback(_widgetBackgroundCallback);
-      await WidgetDataService.init();
-      HomeWidget.widgetClicked.listen((uri) {
-        if (uri == null) return;
-        debugPrint('[HomeWidget] tapped: $uri');
-      });
-    } on MissingPluginException {
-      // Native side not linked yet (first run / simulator / no widget setup).
-      // App works normally — widget features just aren't active.
-      debugPrint('[HomeWidget] Plugin not available — skipping.');
-    } catch (e) {
-      debugPrint('[HomeWidget] Init error: $e');
-    }
-  }
+  // Future<void> _initHomeWidget() async {
+  //   try {
+  //     await HomeWidget.registerBackgroundCallback(_widgetBackgroundCallback);
+  //     await WidgetDataService.init();
+  //     HomeWidget.widgetClicked.listen((uri) {
+  //       if (uri == null) return;
+  //       debugPrint('[HomeWidget] tapped: $uri');
+  //     });
+  //   } on MissingPluginException {
+  //     // Native side not linked yet (first run / simulator / no widget setup).
+  //     // App works normally — widget features just aren't active.
+  //     debugPrint('[HomeWidget] Plugin not available — skipping.');
+  //   } catch (e) {
+  //     debugPrint('[HomeWidget] Init error: $e');
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

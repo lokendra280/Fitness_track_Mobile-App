@@ -99,11 +99,17 @@ class _HabitCardState extends State<HabitCard>
                 decoration: BoxDecoration(
                     color: colorBg, borderRadius: BorderRadius.circular(14)),
                 child: Center(
-                  child: Image.asset(
-                    h.icon,
-                    width: 24,
+                  child: CommonSvgWidget(
+                    svgName: h.icon,
                     height: 24,
+                    width: 24,
+                    color: h.color,
                   ),
+                  // child: Image.asset(
+                  //   h.icon,
+                  //   width: 24,
+                  //   height: 24,
+                  // ),
                 ),
               ),
               const Gap(14),

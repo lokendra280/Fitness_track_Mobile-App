@@ -31,6 +31,17 @@ class Assets {
 
   // dashboard
   static const String state = "$_basePathSvg/stats$_svg";
+  static const String sleep = "$_basePathSvg/sleep$_svg";
+
+  static const String stretch = "$_basePathSvg/stretching$_svg";
+  static const String morning = "$_basePathSvg/morning$_svg";
+  static const String protein_shake = "$_basePathSvg/proteins$_svg";
+  static const String pushups = "$_basePathSvg/push-up$_svg";
+  static const String noPhone = "$_basePathSvg/no-cellphone$_svg";
+  static const String yetCal = "$_basePathSvg/yetcalc$_svg";
+  static const String bed = "$_basePathSvg/bed$_svg";
+  static const String timer = "$_basePathSvg/time$_svg";
+  static const String inbox = "$_basePathSvg/inbox$_svg";
 
   // add habits
   static const String book = "$_basePath/book$_png";

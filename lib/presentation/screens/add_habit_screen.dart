@@ -533,7 +533,10 @@ class _CategoryGrid extends StatelessWidget {
                       curve: Curves.easeOut,
                       child: icon.isAsset
                           ? (icon.isSvg
-                              ? CommonSvgWidget(svgName: icon.assetPath!)
+                              ? CommonSvgWidget(
+                                  svgName: icon.assetPath!,
+                                 
+                                )
                               : Image.asset(
                                   icon.assetPath!,
                                   width: 24,

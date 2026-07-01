@@ -40,7 +40,7 @@
         <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
     </intent-filter>
 </receiver>
-<receiver
+<!-- <receiver
     android:name=".HabitFlowWidgetProvider"
     android:exported="true">
     <intent-filter>
@@ -49,7 +49,7 @@
     <meta-data
         android:name="android.appwidget.provider"
         android:resource="@xml/habit_widget_info"/>
-</receiver>
+</receiver> -->
   <service
             android:name="com.dexterous.flutterlocalnotifications.ForegroundService"        
             android:exported="false"

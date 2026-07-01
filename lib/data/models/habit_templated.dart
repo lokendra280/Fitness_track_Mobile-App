@@ -4,7 +4,7 @@
 //  ChallengeStatus already lives in entities.dart — imported from there.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import 'package:flutter/material.dart';
+import 'package:habitflow/core/constants/constant_assets.dart';
 
 class HabitTemplate {
   final String id;
@@ -36,31 +36,36 @@ class HabitTemplate {
     HabitTemplate(
       id: 'tmpl_morning',
       name: 'Morning Routine',
-      icon: '🌅',
+      icon: Assets.morning,
       category: 'Wellness',
       targetPerDay: 1,
       colorIndex: 0,
       description: 'Start every day with intention and energy.',
       habitNames: ['Drink water', 'Meditate', 'Journal', 'Stretch'],
-      habitIcons: ['💧', '🧘', '📓', '🤸'],
+      habitIcons: [Assets.water, Assets.yoga, Assets.journal, Assets.stretch],
       habitTargets: [1, 1, 1, 1],
     ),
     HabitTemplate(
       id: 'tmpl_fitness',
       name: 'Fitness Plan',
-      icon: '💪',
+      icon: Assets.gym,
       category: 'Health',
       targetPerDay: 1,
       colorIndex: 1,
       description: 'Build strength and endurance step by step.',
       habitNames: ['Morning run', 'Push-ups', 'Protein shake', 'Sleep 8h'],
-      habitIcons: ['🏃', '💪', '🥤', '😴'],
+      habitIcons: [
+        Assets.running,
+        Assets.pushups,
+        Assets.protein_shake,
+        Assets.sleep
+      ],
       habitTargets: [1, 3, 1, 1],
     ),
     HabitTemplate(
       id: 'tmpl_sleep',
       name: 'Better Sleep',
-      icon: '😴',
+      icon: Assets.sleep,
       category: 'Recovery',
       targetPerDay: 1,
       colorIndex: 2,
@@ -71,43 +76,43 @@ class HabitTemplate {
         'Magnesium',
         'Bed by 10pm'
       ],
-      habitIcons: ['📵', '📚', '💊', '🛏️'],
+      habitIcons: [Assets.noPhone, Assets.book, Assets.yetCal, Assets.bed],
       habitTargets: [1, 1, 1, 1],
     ),
     HabitTemplate(
       id: 'tmpl_focus',
       name: 'Deep Work',
-      icon: '🎯',
+      icon: Assets.focus,
       category: 'Productivity',
       targetPerDay: 1,
       colorIndex: 3,
       description: 'Eliminate distractions and do your best work.',
       habitNames: ['Plan day', 'Focus block', 'Review tasks', 'Inbox zero'],
-      habitIcons: ['📋', '⏱️', '✅', '📥'],
+      habitIcons: [Assets.book, Assets.timer, Assets.correct, Assets.inbox],
       habitTargets: [1, 2, 1, 1],
     ),
     HabitTemplate(
       id: 'tmpl_hydration',
       name: 'Hydration',
-      icon: '💧',
+      icon: Assets.water,
       category: 'Wellness',
       targetPerDay: 8,
       colorIndex: 4,
       description: 'Stay hydrated throughout the entire day.',
       habitNames: ['Drink water', 'Herbal tea', 'Avoid soda'],
-      habitIcons: ['💧', '🍵', '🚫'],
+      habitIcons: [Assets.water, Assets.yoga, Assets.protein_shake],
       habitTargets: [8, 2, 1],
     ),
     HabitTemplate(
       id: 'tmpl_mindfulness',
       name: 'Mindfulness',
-      icon: '🧘',
+      icon: Assets.yoga,
       category: 'Mental',
       targetPerDay: 1,
       colorIndex: 5,
       description: 'Cultivate calm and presence every day.',
       habitNames: ['Meditate', 'Gratitude log', 'Nature walk', 'Digital detox'],
-      habitIcons: ['🧘', '🙏', '🌳', '📵'],
+      habitIcons: [Assets.yoga, Assets.journal, Assets.stretch, Assets.noPhone],
       habitTargets: [1, 1, 1, 1],
     ),
   ];

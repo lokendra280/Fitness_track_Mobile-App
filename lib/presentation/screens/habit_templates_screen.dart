@@ -1,13 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  habit_templates_screen.dart
-//  Browse pre-built routines and apply them in one tap.
-//  Design: warm off-white surface, Syne display headings, card grid.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/data/models/habit_templated.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
@@ -96,7 +91,7 @@ class HabitTemplatesScreen extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 0.78,
+                childAspectRatio: 0.70,
               ),
               itemCount: filtered.length,
               itemBuilder: (ctx, i) => _TemplateCard(template: filtered[i]),
@@ -127,21 +122,24 @@ class _TemplateCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: context.borderColor, width: 1.5),
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Icon badge
             Container(
-              width: 48,
-              height: 48,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: accentSurf,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
-                child:
-                    Text(template.icon, style: const TextStyle(fontSize: 24)),
+                child: CommonSvgWidget(
+                  svgName: template.icon,
+                  height: 24,
+                  width: 24,
+                ),
               ),
             ),
             const Gap(12),
@@ -156,7 +154,7 @@ class _TemplateCard extends ConsumerWidget {
             // Title
             Text(
               template.name,
-              style: context.syne(15, FontWeight.w700),
+              style: context.syne(14, FontWeight.w700),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -165,7 +163,7 @@ class _TemplateCard extends ConsumerWidget {
             // Description
             Text(
               template.description,
-              style: context.dmSans(12, FontWeight.w400,
+              style: context.dmSans(11, FontWeight.w400,
                   color: context.textSecondary),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -284,8 +282,11 @@ class _ApplyTemplateSheetState extends State<_ApplyTemplateSheet> {
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(
                 children: [
-                  Text(widget.template.icon,
-                      style: const TextStyle(fontSize: 28)),
+                  CommonSvgWidget(
+                    svgName: widget.template.icon,
+                    height: 28,
+                    width: 28,
+                  ),
                   const Gap(12),
                   Expanded(
                     child: Column(
@@ -347,8 +348,11 @@ class _ApplyTemplateSheetState extends State<_ApplyTemplateSheet> {
                       ),
                       child: Row(
                         children: [
-                          Text(widget.template.habitIcons[i],
-                              style: const TextStyle(fontSize: 22)),
+                          CommonSvgWidget(
+                            svgName: widget.template.habitIcons[i],
+                            height: 22,
+                            width: 22,
+                          ),
                           const Gap(12),
                           Expanded(
                             child: Column(
