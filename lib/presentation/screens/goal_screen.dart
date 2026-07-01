@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/data/models/habit_templated.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
@@ -75,7 +76,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             ],
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Text('Goals', style: context.syne(22, FontWeight.w700)),
+              // title: Text('Goals', style: context.syne(18, FontWeight.w500)),
               background: Container(color: context.bgColor),
             ),
             bottom: PreferredSize(
@@ -258,8 +259,12 @@ class _GoalCard extends ConsumerWidget {
                           children: linked.take(3).map((h) {
                             return Padding(
                               padding: const EdgeInsets.only(left: 2),
-                              child: Text(h.icon,
-                                  style: const TextStyle(fontSize: 13)),
+                              child: CommonSvgWidget(
+                                svgName: h.icon,
+                                height: 20,
+                                width: 20,
+                                color: context.textPrimary,
+                              ),
                             );
                           }).toList(),
                         ),
@@ -584,8 +589,12 @@ class _CreateGoalSheetState extends ConsumerState<_CreateGoalSheet> {
                             ),
                             child: Row(
                               children: [
-                                Text(h.icon,
-                                    style: const TextStyle(fontSize: 18)),
+                                CommonSvgWidget(
+                                  svgName: h.icon,
+                                  height: 20,
+                                  width: 20,
+                                  color: context.textPrimary,
+                                ),
                                 const Gap(10),
                                 Expanded(
                                   child: Text(h.name,

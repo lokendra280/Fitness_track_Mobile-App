@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/domain/entities/mood_entity.dart';
 import 'package:habitflow/presentation/screens/mode_tracking/providers/mood_provider.dart';
@@ -92,9 +93,9 @@ class MoodTrackingScreen extends ConsumerWidget {
 
           // ── Correlations ───────────────────────────────────────────────
           if (corr.isNotEmpty) ...[
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: _SectionLabel(emoji: '🔗', title: 'Habit impact'),
               ),
             ),
@@ -427,7 +428,7 @@ class _CorrelationCard extends StatelessWidget {
 
     return Container(
       width: 140,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: context.surfaceColor,
         borderRadius: BorderRadius.circular(18),
@@ -437,7 +438,12 @@ class _CorrelationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text(c.habitIcon, style: const TextStyle(fontSize: 20)),
+            CommonSvgWidget(
+              svgName: c.habitIcon,
+              height: 20,
+              width: 20,
+              color: context.textPrimary,
+            ),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),

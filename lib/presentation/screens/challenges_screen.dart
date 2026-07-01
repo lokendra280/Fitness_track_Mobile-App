@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
 import 'package:habitflow/data/repositories/challenge_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/entities.dart';
@@ -328,8 +329,12 @@ class _ChallengeCard extends StatelessWidget {
                             color: ctx.textTertiary)),
                     ...chalHabits.take(4).map((h) => Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: Text(h.icon,
-                              style: const TextStyle(fontSize: 18)),
+                          child: CommonSvgWidget(
+                            svgName: h.icon,
+                            height: 20,
+                            width: 20,
+                            color: ctx.textPrimary,
+                          ),
                         )),
                     if (chalHabits.length > 4)
                       Text('+${chalHabits.length - 4}',
@@ -767,8 +772,11 @@ class _CreateChallengeSheetState extends ConsumerState<CreateChallengeSheet> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.asset(h.icon,
-                            width: 20, height: 20, fit: BoxFit.contain),
+                        CommonSvgWidget(
+                            svgName: h.icon,
+                            height: 20,
+                            width: 20,
+                            color: sel ? context.accent : context.textPrimary),
                         const Gap(6),
                         Text(h.name,
                             style: context.dmSans(13, FontWeight.w500,
