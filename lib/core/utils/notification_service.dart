@@ -24,7 +24,7 @@ class NotificationService {
     final String timeZoneName = await _getDeviceTimezone();
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('@mipmap/launcher_icon');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -189,7 +189,7 @@ class NotificationService {
         channelDescription: _channelDesc,
         importance: Importance.max,
         priority: Priority.max,
-        icon: '@mipmap/ic_launcher',
+        icon: '@mipmap/launcher_icon',
         color: Color(0xFF52B788),
         enableVibration: true,
         playSound: true,
