@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/features/habit_tracking/providers/habit_tracking_provider.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../data/models/ai_plan.dart';
 import '../../../data/services/gemini_service.dart';
@@ -24,7 +25,8 @@ final geminiServiceProvider = Provider<GeminiService>((ref) {
 
 /// Fires the Gemini request. Depends on goal + profile so editing either one
 /// (via `ref.refresh`) triggers regeneration.
-final aiPlanGenerationProvider = FutureProvider.autoDispose<AiPlan>((ref) async {
+final aiPlanGenerationProvider =
+    FutureProvider.autoDispose<AiPlan>((ref) async {
   final goal = ref.watch(journeySetupControllerProvider);
   final profile = ref.watch(personalProfileControllerProvider);
 
@@ -47,7 +49,8 @@ class AiPlanController extends Notifier<AiPlan?> {
   Future<void> acceptPlan(AiPlan plan) async {
     state = plan;
     await ref.read(journeyRepositoryProvider).saveAiPlan(plan);
-    ref.read(habitControllerProvider.notifier).seedRecommended([...kDefaultRecommendedHabits, ...plan.recommendedHabits]);
+    ref.read(habitControllerProvider.notifier).seedRecommended(
+        [...kDefaultRecommendedHabits, ...plan.recommendedHabits]);
   }
 
   Future<void> customizePlan(AiPlan Function(AiPlan) edit) async {

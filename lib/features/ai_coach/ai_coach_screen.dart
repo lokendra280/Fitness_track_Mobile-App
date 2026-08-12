@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/features/habit_tracking/providers/habit_tracking_provider.dart';
 import '../../data/models/tracking_models.dart';
 import '../../data/repositories/journey_repository_provider.dart';
 import '../ai_plan/providers/ai_plan_provider.dart';
 import '../journey_setup/providers/journey_setup_provider.dart';
 import '../personal_profile/providers/personal_profile_provider.dart';
-import '../habit_tracking/habit_tracking_screen.dart';
 
 class AiCoachController extends Notifier<List<ChatMessage>> {
   @override
-  List<ChatMessage> build() => ref.read(journeyRepositoryProvider).chatHistory();
+  List<ChatMessage> build() =>
+      ref.read(journeyRepositoryProvider).chatHistory();
 
   /// Phase 6 data_context: pulls real profile/goal/habits/logs/weight
   /// history/measurements/check-ins instead of a placeholder string.
@@ -32,13 +33,16 @@ Body measurements logged: ${repo.measurements().length}. Recent check-in: ${repo
     state = [...state, ChatMessage(role: 'user', content: text)];
     await ref.read(journeyRepositoryProvider).saveChatHistory(state);
     final gemini = ref.read(geminiServiceProvider);
-    final reply = await gemini.chat(history: state, contextSummary: _buildContext());
+    final reply =
+        await gemini.chat(history: state, contextSummary: _buildContext());
     state = [...state, ChatMessage(role: 'assistant', content: reply)];
     await ref.read(journeyRepositoryProvider).saveChatHistory(state);
   }
 }
 
-final aiCoachControllerProvider = NotifierProvider<AiCoachController, List<ChatMessage>>(AiCoachController.new);
+final aiCoachControllerProvider =
+    NotifierProvider<AiCoachController, List<ChatMessage>>(
+        AiCoachController.new);
 
 class AiCoachScreen extends ConsumerStatefulWidget {
   const AiCoachScreen({super.key});
@@ -67,7 +71,9 @@ class _State extends ConsumerState<AiCoachScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: mine ? Colors.teal[100] : Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                      color: mine ? Colors.teal[100] : Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12)),
                   child: Text(m.content),
                 ),
               );
@@ -77,12 +83,19 @@ class _State extends ConsumerState<AiCoachScreen> {
         Padding(
           padding: const EdgeInsets.all(12),
           child: Row(children: [
-            Expanded(child: TextField(controller: inputCtrl, decoration: const InputDecoration(hintText: 'Ask your coach…', border: OutlineInputBorder()))),
+            Expanded(
+                child: TextField(
+                    controller: inputCtrl,
+                    decoration: const InputDecoration(
+                        hintText: 'Ask your coach…',
+                        border: OutlineInputBorder()))),
             IconButton(
               icon: const Icon(Icons.send),
               onPressed: () {
                 if (inputCtrl.text.isEmpty) return;
-                ref.read(aiCoachControllerProvider.notifier).send(inputCtrl.text);
+                ref
+                    .read(aiCoachControllerProvider.notifier)
+                    .send(inputCtrl.text);
                 inputCtrl.clear();
               },
             ),
