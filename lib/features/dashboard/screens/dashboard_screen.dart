@@ -1,339 +1,162 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/greeting_header.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/log_weight_sheet.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/metric_progress_row.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/quick_actions_grid.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/animated_common.dart';
+import '../../../core/widgets/section_header.dart';
 import '../../../data/models/dashboard_data.dart';
-import '../providers/dashboard_provider.dart';
+import '../../../data/models/dashboard_ui_models.dart';
+import '../providers/dashboard_providers.dart';
 
+/// "Home Dashboard" screen — matches the first reference mock, wired to
+/// the real dashboardDataProvider.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
+
+  /// dashboardDataProvider only exposes progress ratios + a couple of
+  /// targets, so the four rows are built here rather than stored on the
+  /// model itself.
+  List<ProgressMetric> _metrics(DashboardData data) {
+    final waterCurrent = (data.waterProgress * data.waterTarget).round();
+    final stepsCurrent = (data.stepsProgress * data.stepTarget).round();
+    return [
+      ProgressMetric(
+        label: 'Calories',
+        valueLabel: '${(data.calorieProgress * 100).round()}% of daily goal',
+        progress: data.calorieProgress,
+        icon: Icons.local_fire_department,
+        color: AppColors.calories,
+        background: AppColors.caloriesBg,
+      ),
+      ProgressMetric(
+        label: 'Water',
+        valueLabel: '$waterCurrent / ${data.waterTarget} ml',
+        progress: data.waterProgress,
+        icon: Icons.water_drop,
+        color: AppColors.water,
+        background: AppColors.waterBg,
+      ),
+      ProgressMetric(
+        label: 'Steps',
+        valueLabel: '$stepsCurrent / ${data.stepTarget} steps',
+        progress: data.stepsProgress,
+        icon: Icons.directions_walk,
+        color: AppColors.steps,
+        background: AppColors.stepsBg,
+      ),
+      ProgressMetric(
+        label: 'Sleep',
+        valueLabel: '${(data.sleepProgress * 100).round()}% of 8h goal',
+        progress: data.sleepProgress,
+        icon: Icons.bedtime,
+        color: AppColors.sleep,
+        background: AppColors.sleepBg,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(dashboardDataProvider);
+    final metrics = _metrics(data);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Your journey')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            _ProgressCard(data: data),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(
-                  child: _StatTile(
-                      icon: Icons.calendar_today,
-                      label: 'Days left',
-                      value: data.daysRemaining?.toString() ?? '–')),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: _StatTile(
-                      icon: Icons.local_fire_department,
-                      label: 'Streak',
-                      value: '${data.journeyStreak}d')),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                  child: _StatTile(
-                      icon: Icons.remove_circle_outline,
-                      label: 'Remaining',
-                      value: data.remainingWeight != null
-                          ? '${data.remainingWeight!.abs().toStringAsFixed(1)} kg'
-                          : '–')),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: _StatTile(
-                      icon: Icons.checklist,
-                      label: 'Habits',
-                      value: '${(data.habitConsistency * 100).round()}%')),
-            ]),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () => context.push('/weekly-review'),
-              child: const _AiInsightCard(),
-            ),
-            const SizedBox(height: 24),
-            Text('Quick actions',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            _QuickActionsRow(),
-            const SizedBox(height: 24),
-            Text('Today', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            _TodayProgressCard(data: data),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_view_week),
-              title: const Text('Weekly summary'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/weekly-review'),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.description_outlined),
-              title: const Text('Reports & export'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/reports'),
-            ),
-          ],
-        ),
+    final sections = <Widget>[
+      const GreetingHeader(
+        userName: '',
+        notificationCount: 0,
       ),
-    );
-  }
-}
-
-class _AiInsightCard extends ConsumerWidget {
-  const _AiInsightCard();
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final insight = ref.watch(aiInsightProvider);
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(children: [
-          const Icon(Icons.auto_awesome),
-          const SizedBox(width: 12),
-          Expanded(
-            child: insight.when(
-              loading: () => const Text('Generating your insight…'),
-              error: (_, __) => const Text(
-                  'AI insight unavailable — tap for full weekly review'),
-              data: (text) =>
-                  Text(text, maxLines: 3, overflow: TextOverflow.ellipsis),
-            ),
+      const SizedBox(height: 20),
+      JourneyCard(
+        progress: data.progressPercentage ?? 0,
+        currentWeight: data.currentWeight,
+        targetWeight: data.targetWeight,
+        weightLost: data.weightLost,
+        daysRemaining: data.daysRemaining,
+        streak: data.journeyStreak,
+        remainingWeight: data.remainingWeight,
+        onMenuTap: () {},
+      ),
+      const SizedBox(height: 24),
+      SectionHeader(
+        title: "Today's progress",
+        actionLabel: 'View all',
+        onActionTap: () => ref.read(bottomNavIndexProvider.notifier).state = 1,
+      ),
+      const SizedBox(height: 8),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Column(
+            children: [
+              for (var i = 0; i < metrics.length; i++) ...[
+                MetricProgressRow(metric: metrics[i]),
+                if (i != metrics.length - 1) const Divider(height: 1),
+              ],
+            ],
           ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _ProgressCard extends StatelessWidget {
-  final DashboardData data;
-  const _ProgressCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = data.progressPercentage ?? 0.0;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: Stack(alignment: Alignment.center, children: [
-                CircularProgressIndicator(
-                    value: pct,
-                    strokeWidth: 7,
-                    backgroundColor: Colors.grey[200]),
-                Text('${(pct * 100).round()}%'),
-              ]),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        data.currentWeight != null
-                            ? '${data.currentWeight} kg'
-                            : 'Log your weight',
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    Text(
-                        data.targetWeight != null
-                            ? 'Target: ${data.targetWeight} kg'
-                            : 'No target set',
-                        style: TextStyle(color: Colors.grey[600])),
-                    if (data.weightLost != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                          '${data.weightLost!.abs().toStringAsFixed(1)} kg ${data.weightLost! >= 0 ? 'lost' : 'gained'} so far',
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary)),
-                    ],
-                  ]),
-            ),
-          ],
         ),
       ),
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  final IconData icon;
-  final String label, value;
-  const _StatTile(
-      {required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(height: 8),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-        ]),
+      const SizedBox(height: 20),
+      AiInsightCard(onTap: () => context.push('/weekly-review')),
+      const SizedBox(height: 24),
+      Text(
+        'Quick actions',
+        style: Theme.of(context).textTheme.titleMedium,
       ),
-    );
-  }
-}
-
-class _TodayProgressCard extends StatelessWidget {
-  final DashboardData data;
-  const _TodayProgressCard({required this.data});
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(children: [
-          _ProgressRow(
-              label: 'Calories',
-              value: data.calorieProgress,
-              icon: Icons.local_fire_department),
-          _ProgressRow(
-              label: 'Water (${data.waterTarget}ml goal)',
-              value: data.waterProgress,
-              icon: Icons.water_drop),
-          _ProgressRow(
-              label: 'Steps (${data.stepTarget} goal)',
-              value: data.stepsProgress,
-              icon: Icons.directions_walk),
-          _ProgressRow(
-              label: 'Sleep', value: data.sleepProgress, icon: Icons.bedtime),
-        ]),
+      const SizedBox(height: 12),
+      QuickActionsGrid(
+        actions: [
+          QuickAction(
+              icon: Icons.monitor_weight,
+              label: 'Add weight',
+              onTap: () => showLogWeightSheet(context, ref)),
+          QuickAction(
+              icon: Icons.camera_alt,
+              label: 'Scan food',
+              onTap: () => context.push('/food')),
+          QuickAction(
+              icon: Icons.water_drop,
+              label: 'Add water',
+              onTap: () => context.push('/water')),
+          QuickAction(
+              icon: Icons.directions_run,
+              label: 'Add workout',
+              onTap: () => context.push('/activity')),
+          QuickAction(
+              icon: Icons.checklist,
+              label: 'Habits',
+              onTap: () => context.push('/habits')),
+          QuickAction(
+              icon: Icons.chat_bubble,
+              label: 'Ask AI',
+              onTap: () => context.push('/ai-coach')),
+          QuickAction(
+              icon: Icons.emoji_events,
+              label: 'Milestones',
+              onTap: () => context.push('/milestones')),
+          QuickAction(
+              icon: Icons.more_horiz,
+              label: 'More',
+              onTap: () => context.push('/more')),
+        ],
       ),
-    );
-  }
-}
-
-class _ProgressRow extends StatelessWidget {
-  final String label;
-  final double value;
-  final IconData icon;
-  const _ProgressRow(
-      {required this.label, required this.value, required this.icon});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
-        Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
-        SizedBox(
-            width: 100,
-            child: LinearProgressIndicator(
-                value: value.clamp(0, 1),
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(4))),
-      ]),
-    );
-  }
-}
-
-class _QuickActionsRow extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final actions = [
-      (Icons.monitor_weight, 'Weight', () => _showLogWeightSheet(context, ref)),
-      (Icons.restaurant, 'Food', () => context.push('/food')),
-      (Icons.water_drop, 'Water', () => context.push('/water')),
-      (Icons.directions_run, 'Workout', () => context.push('/activity')),
-      (Icons.bedtime, 'Sleep', () => context.push('/sleep')),
-      (Icons.straighten, 'Body', () => context.push('/body-progress')),
-      (Icons.checklist, 'Habits', () => context.push('/habits')),
-      (Icons.edit_calendar, 'Check-in', () => context.push('/check-in')),
-      (Icons.auto_awesome, 'AI review', () => context.push('/ai-review')),
-      (Icons.chat_bubble, 'Ask AI', () => context.push('/ai-coach')),
-      (Icons.emoji_events, 'Milestones', () => context.push('/milestones')),
-      (Icons.settings, 'Privacy', () => context.push('/privacy')),
     ];
 
-    return SizedBox(
-      height: 88,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: actions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final (icon, label, onTap) = actions[i];
-          return InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 72,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon),
-                    const SizedBox(height: 4),
-                    Text(label,
-                        style: const TextStyle(fontSize: 11),
-                        textAlign: TextAlign.center),
-                  ]),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showLogWeightSheet(BuildContext context, WidgetRef ref) {
-    final ctrl = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Log today\'s weight',
-                  style: Theme.of(ctx).textTheme.titleMedium),
-              const SizedBox(height: 16),
-              TextField(
-                  controller: ctrl,
-                  autofocus: true,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                      labelText: 'Weight (kg)', border: OutlineInputBorder())),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () async {
-                  final w = double.tryParse(ctrl.text);
-                  if (w == null) return;
-                  await ref
-                      .read(weightLogControllerProvider.notifier)
-                      .logWeight(w);
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                },
-                child: const Text('Save'),
-              ),
-            ]),
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          children: [
+            for (var i = 0; i < sections.length; i++)
+              StaggerFadeIn(index: i, child: sections[i]),
+          ],
+        ),
       ),
     );
   }

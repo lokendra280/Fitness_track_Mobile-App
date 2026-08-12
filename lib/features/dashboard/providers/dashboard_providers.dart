@@ -1,12 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/features/activity_tracking/activity_tracking_screen.dart';
+import 'package:habitflow/features/food_tracking/providers/food_tracking_provider.dart';
+import 'package:habitflow/features/habit_tracking/habit_tracking_screen.dart';
+import 'package:habitflow/features/habit_tracking/providers/habit_tracking_provider.dart';
+import 'package:habitflow/features/water_tracking/providers/water_tracking_provider.dart';
+import 'package:habitflow/features/water_tracking/water_tracking_screen.dart';
 import '../../../data/models/dashboard_data.dart';
 import '../../../data/repositories/journey_repository_provider.dart';
 import '../../journey_setup/providers/journey_setup_provider.dart';
 import '../../ai_plan/providers/ai_plan_provider.dart';
-import '../../habit_tracking/habit_tracking_screen.dart';
-import '../../water_tracking/water_tracking_screen.dart';
-import '../../activity_tracking/activity_tracking_screen.dart';
-import '../../food_tracking/food_tracking_screen.dart';
+
+/// --- UI-only state (not part of the real data layer) ---------------------
+
+/// Which bottom-nav tab is active (Home / Progress / Plan / Habits / Profile).
+final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
+
+/// Selected day in the "Today" week strip.
+final selectedDayIndexProvider = StateProvider<int>((ref) => 0);
+
+/// --- Real data providers ---------------------------------------------------
 
 final dashboardDataProvider = Provider<DashboardData>((ref) {
   final goal = ref.watch(journeySetupControllerProvider);
@@ -21,8 +33,11 @@ final dashboardDataProvider = Provider<DashboardData>((ref) {
       : null;
 
   final today = DateTime.now();
-  final calorieTarget = 2000; // no explicit calorie target field yet — reasonable default
-  final caloriesToday = ref.watch(foodLogProvider(today)).fold<double>(0, (s, e) => s + e.calories);
+  final calorieTarget =
+      2000; // no explicit calorie target field yet — reasonable default
+  final caloriesToday = ref
+      .watch(foodLogProvider(today))
+      .fold<double>(0, (s, e) => s + e.calories);
 
   return DashboardData(
     currentWeight: goal.currentWeight,

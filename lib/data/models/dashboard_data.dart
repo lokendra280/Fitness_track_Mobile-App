@@ -1,33 +1,40 @@
+import 'package:flutter/foundation.dart';
+
+/// Matches the real dashboardDataProvider output shape — plain progress
+/// ratios + targets, no history/milestones/recent-entries (those aren't
+/// exposed by the provider yet, so the UI treats them as optional extras
+/// rather than assuming they exist).
+@immutable
 class DashboardData {
   final double? currentWeight;
   final double? targetWeight;
   final double? weightLost;
   final double? remainingWeight;
-  final double? progressPercentage;
+  final double? progressPercentage; // 0..1
   final int? daysRemaining;
-  final int waterTarget;
+  final int waterTarget; // ml
   final int stepTarget;
   final int journeyStreak;
-  final double habitConsistency;
-  final double calorieProgress;
-  final double waterProgress;
-  final double stepsProgress;
-  final double sleepProgress;
+  final double habitConsistency; // 0..1
+  final double calorieProgress; // 0..1
+  final double waterProgress; // 0..1
+  final double stepsProgress; // 0..1
+  final double sleepProgress; // 0..1
 
   const DashboardData({
-    this.currentWeight,
-    this.targetWeight,
-    this.weightLost,
-    this.remainingWeight,
-    this.progressPercentage,
-    this.daysRemaining,
-    this.waterTarget = 2000,
-    this.stepTarget = 8000,
-    this.journeyStreak = 0,
-    this.habitConsistency = 0,
-    this.calorieProgress = 0,
-    this.waterProgress = 0,
-    this.stepsProgress = 0,
-    this.sleepProgress = 0,
+    required this.currentWeight,
+    required this.targetWeight,
+    required this.weightLost,
+    required this.remainingWeight,
+    required this.progressPercentage,
+    required this.daysRemaining,
+    required this.waterTarget,
+    required this.stepTarget,
+    required this.journeyStreak,
+    required this.habitConsistency,
+    required this.calorieProgress,
+    required this.waterProgress,
+    required this.stepsProgress,
+    required this.sleepProgress,
   });
 }
