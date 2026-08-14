@@ -172,9 +172,10 @@ Use your best visual estimate for portion size. If nothing edible is visible, re
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     final text =
         decoded['candidates']?[0]?['content']?['parts']?[0]?['text'] as String?;
-    if (text == null)
+    if (text == null) {
       throw GeminiServiceException(
           'Gemini response had no text content: ${response.body}');
+    }
 
     final List<dynamic> list;
     try {
