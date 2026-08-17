@@ -117,9 +117,25 @@ class DashboardScreen extends ConsumerWidget {
               label: 'Add weight',
               onTap: () => showLogWeightSheet(context, ref)),
           QuickAction(
-              icon: Icons.camera_alt,
-              label: 'Scan food',
-              onTap: () => context.push('/food')),
+            icon: Icons.camera_alt,
+            label: 'Scan food',
+            onTap: () => context.push('/food'),
+          ),
+          QuickAction(
+            icon: Icons.camera_alt,
+            label: 'Ai Plan',
+            onTap: () => context.push('/activity'),
+          ),
+          QuickAction(
+            icon: Icons.single_bed_sharp,
+            label: 'Sleep Track',
+            onTap: () => context.push('/sleep'),
+          ),
+          QuickAction(
+            icon: Icons.boy_rounded,
+            label: 'Body Progress',
+            onTap: () => context.push('/body-progress'),
+          ),
           QuickAction(
               icon: Icons.water_drop,
               label: 'Add water',
@@ -133,17 +149,28 @@ class DashboardScreen extends ConsumerWidget {
               label: 'Habits',
               onTap: () => context.push('/habits')),
           QuickAction(
+              icon: Icons.checklist,
+              label: 'Daily CheckIn',
+              onTap: () => context.push('/check-in')),
+          QuickAction(
               icon: Icons.chat_bubble,
               label: 'Ask AI',
               onTap: () => context.push('/ai-coach')),
           QuickAction(
-              icon: Icons.emoji_events,
-              label: 'Milestones',
-              onTap: () => context.push('/milestones')),
+            icon: Icons.emoji_events,
+            label: 'Milestones',
+            onTap: () => context.push('/milestones'),
+          ),
           QuickAction(
-              icon: Icons.more_horiz,
-              label: 'More',
-              onTap: () => context.push('/more')),
+            icon: Icons.email_sharp,
+            label: "Journey Completion",
+            onTap: () => context.push('/journey-completion'),
+          ),
+          QuickAction(
+            icon: Icons.more_horiz,
+            label: 'Report',
+            onTap: () => context.push('/reports'),
+          ),
         ],
       ),
     ];
