@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
+import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
+import 'package:habitflow/features/steps/ui/step_count_screen.dart';
 import 'features/journey_setup/screens/journey_setup_screen.dart';
 import 'features/personal_profile/screens/personal_profile_screen.dart';
 import 'features/ai_plan/screens/ai_plan_screen.dart';
@@ -69,6 +71,16 @@ class WeightLossJourneyApp extends StatelessWidget {
         GoRoute(
             path: '/journey-completion',
             builder: (_, __) => const JourneyCompletionScreen()),
+        GoRoute(
+          path: '/step-counter',
+          builder: (_, __) => const StepCounterScreen(),
+        ),
+        GoRoute(
+          path: '/barcode',
+          builder: (_, __) => BarcodeScannerScreen(
+            day: DateTime.now(),
+          ),
+        ),
         GoRoute(
             path: '/privacy',
             builder: (_, __) => const PrivacySettingsScreen()),

@@ -20,6 +20,11 @@ class AppColors {
 
   static const insightBg = Color(0xFFE3F3EA);
   static const milestoneBg = Color(0xFFE3F3EA);
+  static const stepsTrack =
+      Color(0xFFDCF3E4); // light ring/bar track (reuses stepsBg tone)
+  static const chartGridline =
+      Color(0xFFEFF1F2); // faint horizontal chart lines
+  static const chartBarMuted = Color(0xFFA9DCBB);
 }
 
 class AppTheme {

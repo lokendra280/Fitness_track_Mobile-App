@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
 import 'package:habitflow/features/food_tracking/providers/food_tracking_provider.dart';
 import 'package:habitflow/features/food_tracking/widgets/food_scan_result.dart';
 import 'package:image_picker/image_picker.dart';
@@ -38,12 +40,20 @@ class FoodTrackingScreen extends ConsumerWidget {
                             _scan(context, ref, day, ImageSource.camera))),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: ScanButton(
-                        icon: Icons.photo_library_rounded,
-                        label: 'Upload photo',
-                        subtitle: 'From gallery',
-                        onTap: () =>
-                            _scan(context, ref, day, ImageSource.gallery))),
+                  child: ScanButton(
+                    icon: Icons.photo_library_rounded,
+                    label: 'Upload photo',
+                    subtitle: 'From gallery',
+                    onTap: () => _scan(context, ref, day, ImageSource.gallery),
+                  ),
+                ),
+                Expanded(
+                  child: ScanButton(
+                      icon: Icons.scanner_rounded,
+                      label: "BarCode Scanner",
+                      subtitle: "From Camera Or Gallery",
+                      onTap: () => context.go('/barcode')),
+                )
               ]),
             ),
           ),

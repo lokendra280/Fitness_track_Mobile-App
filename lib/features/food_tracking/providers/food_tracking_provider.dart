@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/data/services/barcode_food_service.dart';
 import '../../../data/models/tracking_models.dart';
 import '../../../data/repositories/journey_repository_provider.dart';
 import '../../ai_plan/providers/ai_plan_provider.dart';
@@ -58,4 +59,15 @@ final aiFoodScanProvider = FutureProvider.autoDispose
     .family<List<FoodEntry>, File>((ref, image) async {
   final gemini = ref.watch(geminiServiceProvider);
   return gemini.detectFood(await image.readAsBytes());
+});
+
+final barcodeFoodServiceProvider = Provider<BarcodeFoodService>((ref) {
+  return BarcodeFoodService();
+});
+
+/// Barcode lookup — direct database hit, no AI involved.
+final barcodeFoodLookupProvider =
+    FutureProvider.autoDispose.family<FoodEntry, String>((ref, barcode) async {
+  final service = ref.watch(barcodeFoodServiceProvider);
+  return service.lookup(barcode);
 });

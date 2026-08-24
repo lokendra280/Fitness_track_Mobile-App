@@ -7,6 +7,7 @@ import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/log_weight_sheet.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/metric_progress_row.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/quick_actions_grid.dart';
+import 'package:habitflow/features/steps/ui/step_count_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/animated_common.dart';
 import '../../../core/widgets/section_header.dart';
@@ -22,9 +23,9 @@ class DashboardScreen extends ConsumerWidget {
   /// dashboardDataProvider only exposes progress ratios + a couple of
   /// targets, so the four rows are built here rather than stored on the
   /// model itself.
-  List<ProgressMetric> _metrics(DashboardData data) {
+  List<ProgressMetric> _metrics(DashboardData data, int realSteps) {
     final waterCurrent = (data.waterProgress * data.waterTarget).round();
-    final stepsCurrent = (data.stepsProgress * data.stepTarget).round();
+    final stepsProgress = (realSteps / data.stepTarget).clamp(0.0, 1.0);
     return [
       ProgressMetric(
         label: 'Calories',
@@ -44,8 +45,8 @@ class DashboardScreen extends ConsumerWidget {
       ),
       ProgressMetric(
         label: 'Steps',
-        valueLabel: '$stepsCurrent / ${data.stepTarget} steps',
-        progress: data.stepsProgress,
+        valueLabel: '$realSteps / ${data.stepTarget} steps',
+        progress: stepsProgress,
         icon: Icons.directions_walk,
         color: AppColors.steps,
         background: AppColors.stepsBg,
@@ -64,7 +65,8 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(dashboardDataProvider);
-    final metrics = _metrics(data);
+    final realSteps = ref.watch(todayStepsProvider).valueOrNull ?? 0;
+    final metrics = _metrics(data, realSteps);
 
     final sections = <Widget>[
       const GreetingHeader(
@@ -121,56 +123,61 @@ class DashboardScreen extends ConsumerWidget {
             label: 'Scan food',
             onTap: () => context.push('/food'),
           ),
-          QuickAction(
-            icon: Icons.camera_alt,
-            label: 'Ai Plan',
-            onTap: () => context.push('/activity'),
-          ),
+          // QuickAction(
+          //   icon: Icons.camera_alt,
+          //   label: 'Ai Plan',
+          //   onTap: () => context.push('/activity'),
+          // ),
           QuickAction(
             icon: Icons.single_bed_sharp,
             label: 'Sleep Track',
             onTap: () => context.push('/sleep'),
           ),
-          QuickAction(
-            icon: Icons.boy_rounded,
-            label: 'Body Progress',
-            onTap: () => context.push('/body-progress'),
-          ),
+          // QuickAction(
+          //   icon: Icons.boy_rounded,
+          //   label: 'Body Progress',
+          //   onTap: () => context.push('/body-progress'),
+          // ),
           QuickAction(
               icon: Icons.water_drop,
               label: 'Add water',
               onTap: () => context.push('/water')),
-          QuickAction(
-              icon: Icons.directions_run,
-              label: 'Add workout',
-              onTap: () => context.push('/activity')),
+          // QuickAction(
+          //     icon: Icons.directions_run,
+          //     label: 'Add workout',
+          //     onTap: () => context.push('/activity')),
           QuickAction(
               icon: Icons.checklist,
               label: 'Habits',
               onTap: () => context.push('/habits')),
-          QuickAction(
-              icon: Icons.checklist,
-              label: 'Daily CheckIn',
-              onTap: () => context.push('/check-in')),
-          QuickAction(
-              icon: Icons.chat_bubble,
-              label: 'Ask AI',
-              onTap: () => context.push('/ai-coach')),
-          QuickAction(
-            icon: Icons.emoji_events,
-            label: 'Milestones',
-            onTap: () => context.push('/milestones'),
-          ),
+          // QuickAction(
+          //     icon: Icons.checklist,
+          //     label: 'Daily CheckIn',
+          //     onTap: () => context.push('/check-in')),
+          // QuickAction(
+          //     icon: Icons.chat_bubble,
+          //     label: 'Ask AI',
+          //     onTap: () => context.push('/ai-coach')),
+          // QuickAction(
+          //   icon: Icons.emoji_events,
+          //   label: 'Milestones',
+          //   onTap: () => context.push('/milestones'),
+          // ),
+          // QuickAction(
+          //   icon: Icons.email_sharp,
+          //   label: "Journey Completion",
+          //   onTap: () => context.push('/journey-completion'),
+          // ),
           QuickAction(
             icon: Icons.email_sharp,
-            label: "Journey Completion",
-            onTap: () => context.push('/journey-completion'),
+            label: "StepCounter",
+            onTap: () => context.push('step-counter'),
           ),
-          QuickAction(
-            icon: Icons.more_horiz,
-            label: 'Report',
-            onTap: () => context.push('/reports'),
-          ),
+          // QuickAction(
+          //   icon: Icons.more_horiz,
+          //   label: 'Report',
+          //   onTap: () => context.push('/reports'),
+          // ),
         ],
       ),
     ];

@@ -10,6 +10,13 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
         <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 <uses-permission android:name="android.permission.CAMERA"/>
+<uses-permission android:name="android.permission.health.READ_STEPS"/>
+<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+
+
+   <queries>
+       <package android:name="com.google.android.apps.healthdata"/>
+   </queries>
     <application
         android:label="HabitFlow"
         android:name="${applicationName}"
@@ -31,6 +38,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+         <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
 <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
 <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
     <intent-filter>
@@ -50,6 +68,7 @@
         android:name="android.appwidget.provider"
         android:resource="@xml/habit_widget_info"/>
 </receiver> -->
+
   <service
             android:name="com.dexterous.flutterlocalnotifications.ForegroundService"        
             android:exported="false"
@@ -60,5 +79,7 @@
                 android:value="To demonstrate how to use foreground services to show notifications"/>
         </service>
         <meta-data android:name="flutterEmbedding" android:value="2"/>
+    
     </application>
+
 </manifest>
