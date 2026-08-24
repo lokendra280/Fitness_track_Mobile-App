@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
+import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
 import 'package:habitflow/features/steps/ui/step_count_screen.dart';
 import 'features/journey_setup/screens/journey_setup_screen.dart';
@@ -89,9 +90,8 @@ class WeightLossJourneyApp extends StatelessWidget {
 
     return MaterialApp.router(
       title: 'Weight Loss Journey',
-      theme: AppTypography.applyTo(
-        ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
-      ),
+      theme: AppTheme.light,
+      themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

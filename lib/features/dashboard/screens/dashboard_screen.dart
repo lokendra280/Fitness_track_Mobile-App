@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/greeting_header.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/log_weight_sheet.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/metric_progress_row.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/quick_actions_grid.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/today_calendar_strip.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/weekly_goals_row.dart';
 import 'package:habitflow/features/steps/ui/step_count_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/animated_common.dart';
@@ -69,41 +72,50 @@ class DashboardScreen extends ConsumerWidget {
     final metrics = _metrics(data, realSteps);
 
     final sections = <Widget>[
-      const GreetingHeader(
+      GreetingHeader(
         userName: '',
         notificationCount: 0,
+        onNotificationsTap: () {
+          context.go("/personal-profile");
+        },
       ),
       const SizedBox(height: 20),
-      JourneyCard(
-        progress: data.progressPercentage ?? 0,
-        currentWeight: data.currentWeight,
-        targetWeight: data.targetWeight,
-        weightLost: data.weightLost,
-        daysRemaining: data.daysRemaining,
-        streak: data.journeyStreak,
-        remainingWeight: data.remainingWeight,
-        onMenuTap: () {},
+      const WeeklyGoalsRow(),
+      SBC.lH,
+      TodayCalendarStrip(
+        selectedDate: DateTime.now(),
+        onDateSelected: (DateTime value) {},
       ),
-      const SizedBox(height: 24),
-      SectionHeader(
-        title: "Today's progress",
-        actionLabel: 'View all',
-        onActionTap: () => ref.read(bottomNavIndexProvider.notifier).state = 1,
-      ),
-      const SizedBox(height: 8),
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Column(
-            children: [
-              for (var i = 0; i < metrics.length; i++) ...[
-                MetricProgressRow(metric: metrics[i]),
-                if (i != metrics.length - 1) const Divider(height: 1),
-              ],
-            ],
-          ),
-        ),
-      ),
+      // JourneyCard(
+      //   progress: data.progressPercentage ?? 0,
+      //   currentWeight: data.currentWeight,
+      //   targetWeight: data.targetWeight,
+      //   weightLost: data.weightLost,
+      //   daysRemaining: data.daysRemaining,
+      //   streak: data.journeyStreak,
+      //   remainingWeight: data.remainingWeight,
+      //   onMenuTap: () {},
+      // ),
+      // const SizedBox(height: 24),
+      // SectionHeader(
+      //   title: "Today's progress",
+      //   actionLabel: 'View all',
+      //   onActionTap: () => ref.read(bottomNavIndexProvider.notifier).state = 1,
+      // ),
+      // const SizedBox(height: 8),
+      // Card(
+      //   child: Padding(
+      //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      //     child: Column(
+      //       children: [
+      //         for (var i = 0; i < metrics.length; i++) ...[
+      //           MetricProgressRow(metric: metrics[i]),
+      //           if (i != metrics.length - 1) const Divider(height: 1),
+      //         ],
+      //       ],
+      //     ),
+      //   ),
+      // ),
       const SizedBox(height: 20),
       AiInsightCard(onTap: () => context.push('/weekly-review')),
       const SizedBox(height: 24),

@@ -1,104 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:habitflow/core/theme/app_theme.dart';
 
+abstract class AppTypography {
+  static const _fontFamily = 'Inter';
 
-class AppTypography {
-  AppTypography._();
+  static const _base = TextStyle(
+    fontFamily: _fontFamily,
+    color: AppColors.textPrimary,
+  );
 
-  static TextTheme textTheme(ColorScheme colorScheme) {
-    return TextTheme(
-      displayLarge: GoogleFonts.poppins(
-        fontSize: 32,
-        fontWeight: FontWeight.w700,
-        color: colorScheme.onSurface,
-        height: 1.2,
-      ),
-      displayMedium: GoogleFonts.poppins(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: colorScheme.onSurface,
-        height: 1.2,
-      ),
-      displaySmall: GoogleFonts.poppins(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: colorScheme.onSurface,
-        height: 1.25,
-      ),
-      headlineLarge: GoogleFonts.poppins(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      headlineMedium: GoogleFonts.poppins(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      headlineSmall: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      titleLarge: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      titleMedium: GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      titleSmall: GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      bodyLarge: GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: colorScheme.onSurface,
-        height: 1.4,
-      ),
-      bodyMedium: GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: colorScheme.onSurfaceVariant,
-        height: 1.4,
-      ),
-      bodySmall: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: colorScheme.onSurfaceVariant,
-        height: 1.35,
-      ),
-      labelLarge: GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onPrimary,
-        letterSpacing: 0.2,
-      ),
-      labelMedium: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: colorScheme.onSurfaceVariant,
-        letterSpacing: 0.15,
-      ),
-      labelSmall: GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        color: colorScheme.onSurfaceVariant,
-        letterSpacing: 0.15,
-      ),
-    );
-  }
+  // Display
+  static final displayLarge = _base.copyWith(
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    height: 1.2,
+    letterSpacing: -0.5,
+  );
+  static final displayMedium = _base.copyWith(
+    fontSize: 26,
+    fontWeight: FontWeight.w700,
+    height: 1.25,
+    letterSpacing: -0.3,
+  );
 
-  static ThemeData applyTo(ThemeData theme) {
-    final t = textTheme(theme.colorScheme);
-    return theme.copyWith(
-      textTheme: t,
-      primaryTextTheme: t,
-    );
-  }
+  // Headingsap
+  static final h1 = _base.copyWith(
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    height: 1.3,
+  );
+  static final h2 = _base.copyWith(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 1.35,
+  );
+  static final h3 = _base.copyWith(
+    fontSize: 17,
+    fontWeight: FontWeight.w600,
+    height: 1.4,
+  );
+  static final h4 = _base.copyWith(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    height: 1.4,
+  );
+
+  // Body
+  static final bodyLarge = _base.copyWith(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+  );
+  static final body = _base.copyWith(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+  );
+  static final bodySmall = _base.copyWith(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+    color: AppColors.textSecondary,
+  );
+
+  // Labels
+  static final labelLarge = _base.copyWith(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    height: 1.4,
+  );
+  static final label = _base.copyWith(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.3,
+  );
+  static final labelSmall = _base.copyWith(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.4,
+    color: AppColors.textMuted,
+  );
+
+  // Caption
+  static final caption = _base.copyWith(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    color: AppColors.textMuted,
+  );
 }

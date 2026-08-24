@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/app_topography.dart';
+import 'package:habitflow/core/constants/constant_assets.dart';
+import 'package:habitflow/core/constants/size_constant.dart';
+import 'package:habitflow/core/widgets/app_textfield.dart';
+import 'package:habitflow/features/personal_profile/screens/widgets/group_chip_card.dart';
 import '../providers/personal_profile_provider.dart';
 
 const _activityLevels = [
@@ -57,97 +62,56 @@ class PersonalProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _SectionCard(
-                    icon: Icons.person_outline_rounded,
-                    title: 'Basics',
-                    child: Column(
-                      children: [
-                        _PremiumTextField(
-                          label: 'Age',
-                          icon: Icons.cake_outlined,
-                          keyboardType: TextInputType.number,
-                          onChanged: (v) {
-                            final age = int.tryParse(v);
-                            if (age != null) controller.setAge(age);
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                        DropdownButtonFormField<String>(
-                          decoration: _fieldDecoration(
-                            context,
-                            label: 'Gender',
-                            icon: Icons.wc_rounded,
-                          ),
-                          value: profile.gender,
-                          items: const [
-                            'female',
-                            'male',
-                            'non-binary',
-                            'prefer not to say'
-                          ]
-                              .map((g) =>
-                                  DropdownMenuItem(value: g, child: Text(g)))
-                              .toList(),
-                          onChanged: (v) {
-                            if (v != null) controller.setGender(v);
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                        _PremiumTextField(
-                          label: 'Height',
-                          suffix: profile.heightUnit,
-                          icon: Icons.height_rounded,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          onChanged: (v) {
-                            final h = double.tryParse(v);
-                            if (h != null) controller.setHeight(h);
-                          },
-                        ),
-                      ],
-                    ),
+                  AppTextField(
+                    label: "Age",
+                    keyboardType: TextInputType.number,
+                    prefixIcon: Assets.bed,
+                    onChanged: (v) {
+                      final age = int.tryParse(v);
+                      if (age != null) controller.setAge(age);
+                    },
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    icon: Icons.bolt_rounded,
-                    title: 'Activity level',
-                    child: _ChipGroup(
-                      options: _activityLevels,
-                      isSelected: (level) => profile.activityLevel == level,
-                      onSelected: (level) => controller.setActivityLevel(level),
-                      labelBuilder: (level) => level.replaceAll('_', ' '),
-                    ),
+                  SBC.lHM,
+                  const TextWidget(
+                    title: "Activity Level",
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    icon: Icons.fitness_center_rounded,
-                    title: 'Fitness level',
-                    child: _ChipGroup(
-                      options: _fitnessLevels,
-                      isSelected: (level) => profile.fitnessLevel == level,
-                      onSelected: (level) => controller.setFitnessLevel(level),
-                    ),
+                  SBC.lHM,
+                  ChipGroupCard(
+                    options: _activityLevels,
+                    isSelected: (level) => profile.activityLevel == level,
+                    onSelected: (level) => controller.setActivityLevel(level),
+                    labelBuilder: (level) => level.replaceAll('_', ' '),
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    icon: Icons.restaurant_menu_rounded,
-                    title: 'Diet preference',
-                    child: _ChipGroup(
-                      options: _diets,
-                      isSelected: (d) => profile.dietPreference == d,
-                      onSelected: (d) => controller.setDietPreference(d),
-                    ),
+                  SBC.lHM,
+                  const TextWidget(
+                    title: "Fitness level",
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    icon: Icons.warning_amber_rounded,
-                    title: 'Food allergies',
-                    child: _ChipGroup(
-                      options: _commonAllergies,
-                      isSelected: (a) => profile.foodAllergies.contains(a),
-                      onSelected: (a) => controller.toggleAllergy(a),
-                      filter: true,
-                    ),
+                  SBC.lHM,
+                  ChipGroupCard(
+                    options: _fitnessLevels,
+                    isSelected: (level) => profile.fitnessLevel == level,
+                    onSelected: (level) => controller.setFitnessLevel(level),
+                  ),
+                  SBC.lHM,
+                  const TextWidget(
+                    title: "Diet preference",
+                  ),
+                  SBC.lHM,
+                  ChipGroupCard(
+                    options: _diets,
+                    isSelected: (d) => profile.dietPreference == d,
+                    onSelected: (d) => controller.setDietPreference(d),
+                  ),
+                  SBC.lHM,
+                  const TextWidget(
+                    title: "Food allergies",
+                  ),
+                  SBC.lHM,
+                  ChipGroupCard(
+                    options: _commonAllergies,
+                    isSelected: (a) => profile.foodAllergies.contains(a),
+                    onSelected: (a) => controller.toggleAllergy(a),
+                    filter: true,
                   ),
                   const SizedBox(height: 32),
                   FilledButton(
@@ -178,6 +142,22 @@ class PersonalProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class TextWidget extends StatelessWidget {
+  final String title;
+  const TextWidget({
+    super.key,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: AppTypography.h3,
     );
   }
 }
@@ -361,79 +341,6 @@ class _PremiumTextField extends StatelessWidget {
       onChanged: onChanged,
       decoration:
           _fieldDecoration(context, label: label, icon: icon, suffix: suffix),
-    );
-  }
-}
-
-class _ChipGroup extends StatelessWidget {
-  final List<String> options;
-  final bool Function(String) isSelected;
-  final ValueChanged<String> onSelected;
-  final String Function(String)? labelBuilder;
-  final bool filter;
-
-  const _ChipGroup({
-    required this.options,
-    required this.isSelected,
-    required this.onSelected,
-    this.labelBuilder,
-    this.filter = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options.map((option) {
-        final selected = isSelected(option);
-        final label = labelBuilder?.call(option) ?? option;
-
-        final shape = RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: selected ? Colors.transparent : colorScheme.outlineVariant,
-          ),
-        );
-
-        final labelWidget = Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: selected
-                ? colorScheme.onPrimaryContainer
-                : colorScheme.onSurfaceVariant,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          ),
-        );
-
-        if (filter) {
-          return FilterChip(
-            label: labelWidget,
-            selected: selected,
-            onSelected: (_) => onSelected(option),
-            shape: shape,
-            showCheckmark: false,
-            backgroundColor:
-                colorScheme.surfaceContainerHighest.withOpacity(0.4),
-            selectedColor: colorScheme.primaryContainer,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          );
-        }
-
-        return ChoiceChip(
-          label: labelWidget,
-          selected: selected,
-          onSelected: (_) => onSelected(option),
-          shape: shape,
-          showCheckmark: false,
-          backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.4),
-          selectedColor: colorScheme.primaryContainer,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        );
-      }).toList(),
     );
   }
 }
