@@ -44,6 +44,7 @@ dependencies:
   health: ^13.3.1
   mobile_scanner: ^7.4.0
   flutter_adaptive_ui: ^0.8.0+1
+  lottie: ^3.5.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -74,4 +75,5 @@ flutter:
   assets:
   - assets/png/
   - assets/svg/
+  - assets/lotties/
   - .env

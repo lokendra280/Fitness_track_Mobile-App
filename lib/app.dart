@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
+import 'package:habitflow/features/splash/splash_screen.dart';
 import 'package:habitflow/features/steps/ui/step_count_screen.dart';
 import 'features/journey_setup/screens/journey_setup_screen.dart';
 import 'features/personal_profile/screens/personal_profile_screen.dart';
@@ -39,6 +40,7 @@ class WeightLossJourneyApp extends StatelessWidget {
             path: '/personal-profile',
             builder: (_, __) => const PersonalProfileScreen()),
         GoRoute(path: '/ai-plan', builder: (_, __) => const AiPlanScreen()),
+        GoRoute(path: '/splash', builder: (_, __) => const SplashPage()),
         GoRoute(
             path: '/dashboard', builder: (_, __) => const DashboardScreen()),
         GoRoute(path: '/food', builder: (_, __) => const FoodTrackingScreen()),

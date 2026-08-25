@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
+import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 
 /// One ring-stat card matching the "Daily/Weekly goals" screenshot —
@@ -28,11 +29,6 @@ class GoalRingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
-    // AdaptiveBuilder reads the enclosing Breakpoint and picks a ring
-    // size + padding bracket based on ScreenType, so this card stays
-    // legible on a phone (screenshot's compact size) but doesn't look
-    // tiny/lost if the app is ever run on a tablet or desktop window.
     return AdaptiveBuilder(
       defaultBuilder: (context, screen) =>
           _build(context, textTheme, ringSize: 64, padding: 14),
@@ -68,7 +64,7 @@ class GoalRingCard extends StatelessWidget {
             children: [
               Text(
                 periodLabel,
-                style: textTheme.labelSmall?.copyWith(
+                style: AppTypography.labelSmall.copyWith(
                   color: Colors.grey.shade500,
                   letterSpacing: 0.4,
                 ),
@@ -79,10 +75,14 @@ class GoalRingCard extends StatelessWidget {
               const SizedBox(width: 2),
               Text(
                 '$streakCount',
-                style: textTheme.labelMedium?.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTypography.labelLarge
+                    .copyWith(color: Colors.black87, fontWeight: FontWeight.w700
+                        // letterSpacing: 0.4,
+                        ),
+                // style: textTheme.labelMedium?.copyWith(
+                //   color: Colors.black87,
+                //   fontWeight: FontWeight.w700,
+                // ),
               ),
             ],
           ),

@@ -3,7 +3,9 @@ class Assets {
   static const String _basePathSvg = "assets/svg";
   static const _svg = ".svg";
   static const _png = ".png";
-
+  static const _json = ".json";
+  static const _basePathJson = "assets/lotties";
+  static const String animations = "$_basePathJson/dumbell$_json";
   static const String home = "$_basePathSvg/home$_svg";
 
   static const String statements = "$_basePathSvg/statements$_svg";

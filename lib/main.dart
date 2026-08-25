@@ -17,7 +17,7 @@ Future<void> main() async {
       ],
       child: WeightLossJourneyApp(
         initialLocation:
-            repository.hasCompletedSetup ? '/dashboard' : '/journey-setup',
+            repository.hasCompletedSetup ? '/splash' : '/journey-setup',
       ),
     ),
   );

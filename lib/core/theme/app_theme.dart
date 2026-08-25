@@ -20,21 +20,40 @@ class AppColors {
   static const sleep = Color(0xFF6C6FDA);
   static const sleepBg = Color(0xFFE6E6FB);
   static const textMuted = Color(0xFF9CA3AF);
-// Add inside AppColors class
-  static const goalStepsColor = Color(0xFFF4A73C); // steps ring — amber/orange
-  static const goalCardioColor = Color(0xFFE8555A); // cardio ring — coral/red
-  static const goalStrengthColor = Color(0xFF4E8FDB); // strength ring — blue
+
+  static const goalStepsColor = Color(0xFFF4A73C);
+  static const goalCardioColor = Color(0xFFE8555A);
+  static const goalStrengthColor = Color(0xFF4E8FDB);
   static const goalCardBorder = Color(0xFFEDEDED);
   static const insightBg = Color(0xFFE3F3EA);
   static const milestoneBg = Color(0xFFE3F3EA);
-  static const stepsTrack =
-      Color(0xFFDCF3E4); // light ring/bar track (reuses stepsBg tone)
-  static const chartGridline =
-      Color(0xFFEFF1F2); // faint horizontal chart lines
+  static const stepsTrack = Color(0xFFDCF3E4);
+  static const chartGridline = Color(0xFFEFF1F2);
   static const chartBarMuted = Color(0xFFA9DCBB);
 }
 
 class AppTheme {
+  /// Maps AppTypography's named styles onto Flutter's TextTheme slots,
+  /// so every `Theme.of(context).textTheme.*` call across the app picks
+  /// up Montserrat + the custom scale instead of the Material default.
+  static TextTheme get _textTheme => TextTheme(
+        displayLarge: AppTypography.displayLarge,
+        displayMedium: AppTypography.displayMedium,
+        displaySmall: AppTypography.h1,
+        headlineLarge: AppTypography.h1,
+        headlineMedium: AppTypography.h2,
+        headlineSmall: AppTypography.h3,
+        titleLarge: AppTypography.h3,
+        titleMedium: AppTypography.h4,
+        titleSmall: AppTypography.labelLarge,
+        bodyLarge: AppTypography.bodyLarge,
+        bodyMedium: AppTypography.body,
+        bodySmall: AppTypography.bodySmall,
+        labelLarge: AppTypography.labelLarge,
+        labelMedium: AppTypography.label,
+        labelSmall: AppTypography.labelSmall,
+      );
+
   static ThemeData get light {
     final base = ThemeData(
       useMaterial3: true,
@@ -47,6 +66,8 @@ class AppTheme {
     );
 
     return base.copyWith(
+      textTheme: _textTheme,
+      primaryTextTheme: _textTheme,
       cardTheme: CardThemeData(
         elevation: 0,
         color: Colors.white,
@@ -56,12 +77,13 @@ class AppTheme {
         ),
         margin: EdgeInsets.zero,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        foregroundColor: Colors.black87,
+        foregroundColor: AppColors.textPrimary,
+        titleTextStyle: AppTypography.h2,
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: base.colorScheme.primary,
@@ -75,6 +97,11 @@ class AppTheme {
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+        selectedLabelStyle: AppTypography.labelSmall.copyWith(
+          color: base.colorScheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: AppTypography.labelSmall,
       ),
       dividerTheme: DividerThemeData(
         color: Colors.grey.shade200,
