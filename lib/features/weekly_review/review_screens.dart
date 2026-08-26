@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/core/widgets/animated_common.dart';
+import 'package:habitflow/features/weekly_review/models/perodic_meters.dart';
 import 'providers/review_providers.dart';
 
 class WeeklyReviewScreen extends ConsumerWidget {

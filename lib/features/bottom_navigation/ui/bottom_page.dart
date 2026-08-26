@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
-import 'package:habitflow/core/constants/string.dart';
+import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/features/bottom_navigation/widgets/bottom_navigation.dart';
 import 'package:habitflow/features/dashboard/screens/dashboard_screen.dart';
 import 'package:habitflow/features/weekly_review/review_screens.dart';

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
+import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/core/widgets/animated_common.dart';
 
 class QuickAction {
-  final IconData icon;
+  final String icon;
   final String label;
   final VoidCallback onTap;
   const QuickAction(
@@ -42,14 +44,21 @@ class QuickActionsGrid extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(action.icon,
-                      color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 6),
-                  Text(
-                    action.label,
-                    style: const TextStyle(fontSize: 11),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
+                  CommonSvgWidget(
+                    svgName: action.icon,
+                    height: 30,
+                    width: 30,
+                  ),
+                  SBC.sH,
+                  // Icon(action.icon,
+                  //     color: Theme.of(context).colorScheme.primary),
+                  Flexible(
+                    child: Text(
+                      action.label,
+                      style: const TextStyle(fontSize: 11),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                    ),
                   ),
                 ],
               ),

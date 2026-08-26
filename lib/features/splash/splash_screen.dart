@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
-import 'package:habitflow/core/constants/string.dart';
+import 'package:habitflow/core/constants/app_string.dart';
+import 'package:habitflow/core/router/app_router.dart';
 import 'package:lottie/lottie.dart';
 
 import 'package:habitflow/core/theme/app_theme.dart';
@@ -49,7 +50,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   Future<void> _navigateNext() async {
     await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
-    context.go('/botoomNav');
+    context.go(AppRoutes.dashboard);
   }
 
   @override

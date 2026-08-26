@@ -1,40 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
-
-class PeriodMetrics {
-  final List<double> stepsPerDay, waterPerDay, sleepPerDay;
-  final double? weightChange;
-  final int workoutCount;
-  final double habitConsistency;
-  PeriodMetrics({
-    required this.stepsPerDay,
-    required this.waterPerDay,
-    required this.sleepPerDay,
-    this.weightChange,
-    required this.workoutCount,
-    required this.habitConsistency,
-  });
-
-  double get avgSteps => stepsPerDay.isEmpty
-      ? 0
-      : stepsPerDay.reduce((a, b) => a + b) / stepsPerDay.length;
-  double get avgWater => waterPerDay.isEmpty
-      ? 0
-      : waterPerDay.reduce((a, b) => a + b) / waterPerDay.length;
-  double get avgSleep => sleepPerDay.isEmpty
-      ? 0
-      : sleepPerDay.reduce((a, b) => a + b) / sleepPerDay.length;
-
-  Map<String, dynamic> toPromptMap() => {
-        'avgSteps': avgSteps.round(),
-        'avgWaterMl': avgWater.round(),
-        'avgSleepHours': avgSleep.toStringAsFixed(1),
-        'weightChangeKg': weightChange,
-        'workoutCount': workoutCount,
-        'habitConsistencyPct': (habitConsistency * 100).round(),
-      };
-}
+import 'package:habitflow/features/weekly_review/models/perodic_meters.dart';
 
 PeriodMetrics _computeMetrics(dynamic repo, DateTime start, int days) {
   final steps = <double>[], water = <double>[], sleep = <double>[];
@@ -60,13 +27,13 @@ PeriodMetrics _computeMetrics(dynamic repo, DateTime start, int days) {
 }
 
 final weeklyMetricsProvider =
-    Provider.family<PeriodMetrics, DateTime>((ref, weekStart) {
+    Provider.autoDispose.family<PeriodMetrics, DateTime>((ref, weekStart) {
   final repo = ref.watch(journeyRepositoryProvider);
   return _computeMetrics(repo, weekStart, 7);
 });
 
 final monthlyMetricsProvider =
-    Provider.family<PeriodMetrics, DateTime>((ref, monthStart) {
+    Provider.autoDispose.family<PeriodMetrics, DateTime>((ref, monthStart) {
   final repo = ref.watch(journeyRepositoryProvider);
   return _computeMetrics(repo, monthStart, 30);
 });

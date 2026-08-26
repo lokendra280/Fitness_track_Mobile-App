@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
@@ -129,24 +130,24 @@ class DashboardScreen extends ConsumerWidget {
       //     ),
       //   ),
       // ),
-      SBC.lHM,
+      SBC.lH,
 
       // AiInsightCard(onTap: () => context.push('/weekly-review')),
-      const SizedBox(height: 24),
+      SBC.lH,
       Text(
         'Quick actions',
         style: Theme.of(context).textTheme.titleMedium,
       ),
-      const SizedBox(height: 12),
+      SBC.lHM,
       QuickActionsGrid(
         actions: [
           QuickAction(
-              icon: Icons.monitor_weight,
+              icon: Assets.bed,
               label: 'Add weight',
               onTap: () => showLogWeightSheet(context, ref)),
           QuickAction(
-            icon: Icons.camera_alt,
-            label: 'Scan food',
+            icon: Assets.camera,
+            label: AppString.trackCalories,
             onTap: () => context.push('/food'),
           ),
           // QuickAction(
@@ -155,7 +156,7 @@ class DashboardScreen extends ConsumerWidget {
           //   onTap: () => context.push('/activity'),
           // ),
           QuickAction(
-            icon: Icons.single_bed_sharp,
+            icon: Assets.sleep,
             label: 'Sleep Track',
             onTap: () => context.push('/sleep'),
           ),
@@ -165,15 +166,15 @@ class DashboardScreen extends ConsumerWidget {
           //   onTap: () => context.push('/body-progress'),
           // ),
           QuickAction(
-              icon: Icons.water_drop,
-              label: 'Add water',
+              icon: Assets.water,
+              label: AppString.trackWater,
               onTap: () => context.push('/water')),
           // QuickAction(
           //     icon: Icons.directions_run,
           //     label: 'Add workout',
           //     onTap: () => context.push('/activity')),
           QuickAction(
-              icon: Icons.checklist,
+              icon: Assets.habit,
               label: 'Habits',
               onTap: () => context.push('/habits')),
           // QuickAction(
@@ -195,12 +196,12 @@ class DashboardScreen extends ConsumerWidget {
           //   onTap: () => context.push('/journey-completion'),
           // ),
           QuickAction(
-            icon: Icons.email_sharp,
-            label: "StepCounter",
+            icon: Assets.running,
+            label: AppString.stepCounter,
             onTap: () => context.push('step-counter'),
           ),
           QuickAction(
-            icon: Icons.more_horiz,
+            icon: Assets.report,
             label: 'Report',
             onTap: () => context.push('/reports'),
           ),

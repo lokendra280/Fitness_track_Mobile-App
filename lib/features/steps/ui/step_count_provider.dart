@@ -104,3 +104,10 @@ DateTime _todayKey() {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day);
 }
+
+final stepsProgressProvider = Provider<double>((ref) {
+  final steps = ref.watch(todayStepsProvider).valueOrNull ?? 0;
+  final goal = ref.watch(stepGoalProvider);
+  if (goal <= 0) return 0.0;
+  return (steps / goal).clamp(0.0, 1.0);
+});

@@ -34,6 +34,7 @@ class CommonSvgWidget extends StatelessWidget {
               height: height,
               width: width,
               color: color,
+              fit: BoxFit.cover,
             ),
     );
   }

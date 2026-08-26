@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1087687861671",
+    "project_id": "fitjourney-mobileapp",
+    "storage_bucket": "fitjourney-mobileapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1087687861671:android:0ec68ee6dd1667216dc282",
+        "android_client_info": {
+          "package_name": "com.healthflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLGGMPjnajjnlxE6IxBmUlnFqfeiIJSDQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

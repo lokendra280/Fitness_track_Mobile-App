@@ -9,7 +9,7 @@ class AppColors {
   static const textPrimary = Color(0xFF111827);
   static const textSecondary = Color(0xFF6B7280);
   static const background = Color(0xFFF7F3E9);
-
+  static const primary = Color.fromRGBO(34, 183, 34, 1);
   static const calories = Color(0xFFF6A23A);
   static const caloriesBg = Color(0xFFFDEEDA);
   static const water = Color(0xFF3B9EDB);

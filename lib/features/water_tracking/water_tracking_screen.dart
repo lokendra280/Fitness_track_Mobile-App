@@ -18,7 +18,7 @@ class WaterTrackingScreen extends ConsumerWidget {
 
   /// Shown in the "Keep going" message, e.g. "Taigo, you drunk...".
   /// TODO: wire to the real user-profile provider instead of a param.
-  final String userName;
+final String userName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

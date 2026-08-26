@@ -1,9 +1,11 @@
 class Assets {
   static const String _basePath = "assets/png";
   static const String _basePathSvg = "assets/svg";
+  static const String _basePathJpg = "assets/jpg";
   static const _svg = ".svg";
   static const _png = ".png";
   static const _json = ".json";
+  static const _jpg = ".jpg";
   static const _basePathJson = "assets/lotties";
   static const String animations = "$_basePathJson/dumbell$_json";
   static const String home = "$_basePathSvg/home$_svg";
@@ -24,6 +26,7 @@ class Assets {
   static const String strike = "$_basePathSvg/strike$_svg";
 
   static const String correct = "$_basePathSvg/correct$_svg";
+  static const String camera = "$_basePathSvg/camera$_svg";
 
 //// profile page
   static const String habit = "$_basePathSvg/habit$_svg";
@@ -44,6 +47,7 @@ class Assets {
   static const String bed = "$_basePathSvg/bed$_svg";
   static const String timer = "$_basePathSvg/time$_svg";
   static const String inbox = "$_basePathSvg/inbox$_svg";
+  static const String report = "$_basePathSvg/report$_svg";
 
   // add habits
   static const String book = "$_basePath/book$_png";
@@ -59,4 +63,8 @@ class Assets {
   static const String healthyFood = "$_basePath/healthy_food$_png";
   static const String focus = "$_basePath/focus$_png";
   static const String cleaning = "$_basePath/cleaning$_png";
+  static const String google = "$_basePath/google$_png";
+  static const String onBoardingOne = "$_basePathJpg/oneBoardingOne$_png";
+  static const String onBoardingTwo = "$_basePathJpg/onboardingTwo$_png";
+  static const String onboardingThree = "$_basePathJpg/onboardingThree$_png";
 }

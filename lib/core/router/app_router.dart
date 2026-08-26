@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/features/auth/ui/sign_in_screen.dart';
 import 'package:habitflow/features/bottom_navigation/ui/bottom_page.dart';
 
 import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
+import 'package:habitflow/features/onboarding/pages/onboarding_screen.dart';
 import 'package:habitflow/features/reports/pages/statistics_screen.dart';
 import 'package:habitflow/features/splash/splash_screen.dart';
 import 'package:habitflow/features/steps/ui/step_count_screen.dart';
@@ -54,12 +56,24 @@ abstract class AppRoutes {
   static const barcode = '/barcode';
   static const privacy = '/privacy';
   static const bottomNavbar = '/botoomNav';
+  static const signUp = '/sign-up';
+  static const oneBoarding = '/onBoarding';
 }
 
 /// Builds the GoRouter's route table. Kept separate from the provider
 /// itself so it's a plain, easily-testable function.
 List<RouteBase> buildAppRoutes() {
   return [
+    GoRoute(
+      path: AppRoutes.oneBoarding,
+      builder: (_, __) => OnboardingScreen(
+        onFinished: () {},
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.signUp,
+      builder: (_, __) => const SignInScreen(),
+    ),
     GoRoute(
       path: AppRoutes.journeySetup,
       builder: (_, __) => const JourneySetupScreen(),
