@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:habitflow/features/bottom_navigation/ui/bottom_page.dart';
 
 import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
+import 'package:habitflow/features/reports/pages/statistics_screen.dart';
 import 'package:habitflow/features/splash/splash_screen.dart';
 import 'package:habitflow/features/steps/ui/step_count_screen.dart';
 import 'package:habitflow/features/journey_setup/screens/journey_setup_screen.dart';
@@ -21,7 +22,7 @@ import 'package:habitflow/features/ai_daily_review/ai_daily_review_screen.dart';
 import 'package:habitflow/features/ai_coach/ai_coach_screen.dart';
 import 'package:habitflow/features/weekly_review/review_screens.dart';
 import 'package:habitflow/features/milestones/milestones_screen.dart';
-import 'package:habitflow/features/journey_completion/journey_completion_screen.dart';
+import 'package:habitflow/features/reports/journey_completion_screen.dart';
 import 'package:habitflow/core/privacy/consent_provider.dart';
 
 /// Route path constants — reference these instead of hardcoded strings
@@ -133,7 +134,7 @@ List<RouteBase> buildAppRoutes() {
     ),
     GoRoute(
       path: AppRoutes.reports,
-      builder: (_, __) => const ReportsScreen(),
+      builder: (_, __) => const StatisticsScreen(),
     ),
     GoRoute(
       path: AppRoutes.journeyCompletion,

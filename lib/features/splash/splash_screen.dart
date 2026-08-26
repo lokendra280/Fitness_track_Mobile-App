@@ -3,6 +3,8 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
+import 'package:habitflow/core/constants/size_constant.dart';
+import 'package:habitflow/core/constants/string.dart';
 import 'package:lottie/lottie.dart';
 
 import 'package:habitflow/core/theme/app_theme.dart';
@@ -124,42 +126,43 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                               ),
                             ],
                           ),
+                          SBC.sH,
                           // const Gap(18),
-                          // ShaderMask(
-                          //   shaderCallback: (bounds) => const LinearGradient(
-                          //     colors: [Colors.white, Color(0xFFE7EAE8)],
-                          //     begin: Alignment.topCenter,
-                          //     end: Alignment.bottomCenter,
-                          //   ).createShader(bounds),
-                          //   child: Text(
-                          //     'HabitFlow',
-                          //     style: GoogleFonts.syne(
-                          //       fontSize: 38,
-                          //       fontWeight: FontWeight.w800,
-                          //       color: Colors.white,
-                          //       letterSpacing: 0.5,
-                          //       height: 1.1,
-                          //     ),
-                          //   ),
-                          // ),
-                          // const Gap(10),
-                          // Container(
-                          //   width: 36,
-                          //   height: 2,
-                          //   decoration: BoxDecoration(
-                          //     color: _gold.withValues(alpha: 0.7),
-                          //     borderRadius: BorderRadius.circular(2),
-                          //   ),
-                          // ),
-                          // const Gap(14),
-                          // Text(
-                          //   'Build better habits, every day',
-                          //   style: GoogleFonts.dmSans(
-                          //     fontSize: 15,
-                          //     color: Colors.white.withValues(alpha: 0.6),
-                          //     letterSpacing: 0.2,
-                          //   ),
-                          // ),
+                          ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [Colors.white, Color(0xFFE7EAE8)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ).createShader(bounds),
+                            child: Text(
+                              AppString.appName,
+                              style: GoogleFonts.syne(
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                          const Gap(10),
+                          Container(
+                            width: 36,
+                            height: 2,
+                            decoration: BoxDecoration(
+                              color: _gold.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          // const Gap(),
+                          Text(
+                            AppString.appSubTitle,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.6),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ],
                       ),
                     ),

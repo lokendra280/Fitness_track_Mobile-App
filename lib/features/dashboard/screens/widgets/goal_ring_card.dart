@@ -3,122 +3,142 @@ import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 
-/// One ring-stat card matching the "Daily/Weekly goals" screenshot —
-/// period label + flame streak top row, a progress ring with a centered
-/// icon, then a bold title and grey subtitle underneath.
+/// One ring-stat card matching the Jogging/Cycling/Swim reference design:
+/// a solid-color pill badge up top, and a progress ring with the value +
+/// unit text centered inside it (no icon in the ring).
 class GoalRingCard extends StatelessWidget {
   final String periodLabel;
   final int streakCount;
-  final IconData icon;
   final Color ringColor;
   final double progress;
   final String title;
-  final String subtitle;
+  final String value;
+  final String unit;
 
   const GoalRingCard({
     super.key,
     required this.periodLabel,
     required this.streakCount,
-    required this.icon,
     required this.ringColor,
     required this.progress,
     required this.title,
-    required this.subtitle,
+    required this.value,
+    required this.unit,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return AdaptiveBuilder(
-      defaultBuilder: (context, screen) =>
-          _build(context, textTheme, ringSize: 64, padding: 14),
+      defaultBuilder: (context, screen) => _build(ringSize: 90, padding: 14),
       layoutDelegate: AdaptiveLayoutDelegateWithMinimallScreenType(
-        handset: (context, screen) =>
-            _build(context, textTheme, ringSize: 64, padding: 14),
-        tablet: (context, screen) =>
-            _build(context, textTheme, ringSize: 84, padding: 18),
-        desktop: (context, screen) =>
-            _build(context, textTheme, ringSize: 100, padding: 22),
+        handset: (context, screen) => _build(ringSize: 90, padding: 14),
+        tablet: (context, screen) => _build(ringSize: 110, padding: 18),
+        desktop: (context, screen) => _build(ringSize: 130, padding: 22),
       ),
     );
   }
 
-  Widget _build(
-    BuildContext context,
-    TextTheme textTheme, {
-    required double ringSize,
-    required double padding,
-  }) {
+  Widget _build({required double ringSize, required double padding}) {
     return Container(
-      padding: EdgeInsets.all(padding),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.goalCardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Text(
-                periodLabel,
-                style: AppTypography.labelSmall.copyWith(
-                  color: Colors.grey.shade500,
-                  letterSpacing: 0.4,
+          // Solid-color pill badge, white text, no icon — matches the
+          // "Jogging" / "Cycling" / "Swim" chips exactly.
+          Container(
+            padding: const EdgeInsets.symmetric(
+              vertical: 6,
+              horizontal: 10,
+            ),
+            decoration: BoxDecoration(
+              color: ringColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              title,
+              style: AppTypography.labelSmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          SizedBox(height: padding * 1.1),
+
+          // Ring with value + unit centered inside — no icon.
+          SizedBox(
+            width: ringSize,
+            height: ringSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size(ringSize, ringSize),
+                  painter:
+                      _GoalRingPainter(progress: progress, color: ringColor),
                 ),
-              ),
-              const Spacer(),
-              const Icon(Icons.local_fire_department_rounded,
-                  color: Color(0xFFF4A73C), size: 15),
-              const SizedBox(width: 2),
-              Text(
-                '$streakCount',
-                style: AppTypography.labelLarge
-                    .copyWith(color: Colors.black87, fontWeight: FontWeight.w700
-                        // letterSpacing: 0.4,
-                        ),
-                // style: textTheme.labelMedium?.copyWith(
-                //   color: Colors.black87,
-                //   fontWeight: FontWeight.w700,
-                // ),
-              ),
-            ],
-          ),
-          SizedBox(height: padding),
-          Center(
-            child: SizedBox(
-              width: ringSize,
-              height: ringSize,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CustomPaint(
-                    size: Size(ringSize, ringSize),
-                    painter: _GoalRingPainter(
-                      progress: progress,
-                      color: ringColor,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      style: AppTypography.h3.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    Text(
+                      unit,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          if (streakCount > 0) ...[
+            SizedBox(height: padding * 0.6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  periodLabel,
+                  style: AppTypography.labelSmall.copyWith(
+                    color: Colors.grey.shade500,
+                    letterSpacing: 0.4,
                   ),
-                  Icon(icon, color: ringColor, size: ringSize * 0.34),
-                ],
-              ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.local_fire_department_rounded,
+                    color: Color(0xFFF4A73C), size: 12),
+                const SizedBox(width: 2),
+                Text(
+                  '$streakCount',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-          ),
-          SizedBox(height: padding * 0.7),
-          Text(
-            title,
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
-          ),
+          ],
         ],
       ),
     );
@@ -132,7 +152,7 @@ class _GoalRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const strokeWidth = 5.0;
+    const strokeWidth = 6.0;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.shortestSide - strokeWidth) / 2;
 

@@ -3,15 +3,29 @@ import '../../../data/repositories/journey_repository_provider.dart';
 import '../../ai_plan/providers/ai_plan_provider.dart';
 
 class WaterController extends Notifier<int> {
+  DateTime _trackedDay = DateTime.now();
+
   @override
-  int build() => ref.read(journeyRepositoryProvider).waterFor(DateTime.now());
+  int build() {
+    _trackedDay = DateTime.now();
+    return ref.read(journeyRepositoryProvider).waterFor(_trackedDay);
+  }
 
   Future<void> quickAdd(int ml) async {
+    // If the day rolled over since this controller was created, reset
+    // to today's persisted value first instead of adding onto yesterday's.
+    final today = DateTime.now();
+    if (today.day != _trackedDay.day) {
+      _trackedDay = today;
+      state = ref.read(journeyRepositoryProvider).waterFor(today);
+    }
+
     state += ml;
-    await ref.read(journeyRepositoryProvider).saveWater(DateTime.now(), state);
+    await ref.read(journeyRepositoryProvider).saveWater(today, state);
     final target = ref.read(aiPlanControllerProvider)?.waterTarget ?? 2000;
-    if (state >= target)
+    if (state >= target) {
       await ref.read(journeyRepositoryProvider).recordActivity('water');
+    }
   }
 }
 

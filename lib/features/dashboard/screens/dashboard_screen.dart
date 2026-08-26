@@ -91,9 +91,12 @@ class DashboardScreen extends ConsumerWidget {
       SBC.lHM,
 
       PersonalWorkoutCard(
-        title: "WorkOuts",
+        title: "Habits",
         completedCount: 2,
         totalCount: 10,
+        onTap: () {
+          context.push('/habits');
+        },
         // backgroundImage: Image.asset(name),
       ),
       // JourneyCard(
@@ -128,7 +131,7 @@ class DashboardScreen extends ConsumerWidget {
       // ),
       SBC.lHM,
 
-      AiInsightCard(onTap: () => context.push('/weekly-review')),
+      // AiInsightCard(onTap: () => context.push('/weekly-review')),
       const SizedBox(height: 24),
       Text(
         'Quick actions',
@@ -196,11 +199,11 @@ class DashboardScreen extends ConsumerWidget {
             label: "StepCounter",
             onTap: () => context.push('step-counter'),
           ),
-          // QuickAction(
-          //   icon: Icons.more_horiz,
-          //   label: 'Report',
-          //   onTap: () => context.push('/reports'),
-          // ),
+          QuickAction(
+            icon: Icons.more_horiz,
+            label: 'Report',
+            onTap: () => context.push('/reports'),
+          ),
         ],
       ),
     ];
@@ -208,7 +211,7 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
           children: [
             for (var i = 0; i < sections.length; i++)
               StaggerFadeIn(index: i, child: sections[i]),

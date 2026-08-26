@@ -13,7 +13,7 @@ class GeminiService {
   final String apiKey;
   final String model;
 
-  GeminiService({required this.apiKey, this.model = 'gemini-flash-latest'});
+  GeminiService({required this.apiKey, this.model = 'gemini-3.6-flash'});
 
   Uri get _endpoint => Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey');
@@ -40,9 +40,17 @@ class GeminiService {
     final stepTargetValue = PlanCalculator.stepTarget(
         activityLevel: profile.activityLevel ?? '', goalType: goal.type);
 
+    // Drives both the exercise mix and the wording the model uses — a
+    // "weight loss" plan should lean cardio-heavy, "weight gain"
+    // should lean strength-heavy, everything else stays balanced.
+    // Adjust the matching strings below if JourneyGoal.type uses
+    // different literal values than these three.
+    final direction = _goalDirection(goal.type);
+
     final prompt = _buildPrompt(
       goal,
       profile,
+      direction: direction,
       calorieTarget: calorieTargetValue,
       waterTarget: waterTargetValue,
       stepTarget: stepTargetValue,
@@ -96,22 +104,54 @@ class GeminiService {
     return AiPlan.fromJson(planJson);
   }
 
+  /// Coarse three-way bucket used purely to steer wording and exercise
+  /// mix. Update the match strings if your JourneyGoal.type enum/string
+  /// values differ from 'lose_weight' / 'gain_weight'.
+  String _goalDirection(String goalType) {
+    final t = goalType.toLowerCase();
+    if (t.contains('lose') || t.contains('loss')) return 'lose_weight';
+    if (t.contains('gain') || t.contains('bulk') || t.contains('muscle')) {
+      return 'gain_weight';
+    }
+    return 'maintain';
+  }
+
   String _buildPrompt(
     JourneyGoal goal,
     PersonalProfile profile, {
+    required String direction,
     required int calorieTarget,
     required int waterTarget,
     required int stepTarget,
   }) {
+    final directionGuidance = switch (direction) {
+      'lose_weight' =>
+        'This user wants to LOSE weight. Favor cardio and full-body '
+            'movements that burn calories (brisk walking, cycling, jogging, '
+            'jump rope, circuit-style bodyweight sets) with 1-2 light '
+            'strength sessions to preserve muscle. Keep rest periods short.',
+      'gain_weight' =>
+        'This user wants to GAIN weight/muscle. Favor progressive strength '
+            'training (squats, deadlift pattern, push/pull/bench, rows) with '
+            'longer rest periods and heavier compound moves. Keep cardio '
+            'minimal — just enough for general health, not calorie burn.',
+      _ => 'This user wants to MAINTAIN their current weight. Give a balanced '
+          'mix of strength and cardio for general fitness.',
+    };
+
     return '''
 You are a fitness and nutrition planning assistant. This is general wellness
-guidance, not medical advice.
+guidance, not medical advice. Keep everything simple and directly actionable
+— this plan revolves around three numbers the user will track every day:
+calories eaten, steps walked, and water drunk.
 
-These daily numeric targets have already been calculated using standard
+These three daily targets have already been calculated using standard
 formulas — return them in your JSON EXACTLY as given, do not recalculate them:
-- calorieTarget: $calorieTarget
-- waterTarget: $waterTarget
-- stepTarget: $stepTarget
+- calorieTarget: $calorieTarget kcal/day
+- waterTarget: $waterTarget ml/day
+- stepTarget: $stepTarget steps/day
+
+$directionGuidance
 
 User goal:
 - type: ${goal.type}
@@ -130,11 +170,19 @@ User profile:
 - food allergies: ${profile.foodAllergies.join(', ')}
 - food restrictions: ${profile.foodRestrictions.join(', ')}
 
-Choose 4-6 specific exercises appropriate for a "${profile.fitnessLevel}"
-fitness level working toward "${goal.type}". Mix strength moves (e.g. squats,
-lunges, push-ups, planks) with cardio/mobility as fits their level — assume
-bodyweight/basic gym equipment unless told otherwise. Give each a concrete
-sets/reps or duration.
+Choose 4-6 specific exercises matching the guidance above and the user's
+"${profile.fitnessLevel}" fitness level. Assume bodyweight/basic gym
+equipment unless told otherwise. Give each a concrete sets/reps or duration.
+
+For recommendedHabits, keep it simple and directly tied to the three
+numbers above plus consistency — always include exactly these four, in
+this order, filling in the target numbers:
+1. "Log your meals — aim for $calorieTarget kcal/day"
+2. "Walk $stepTarget steps/day"
+3. "Drink $waterTarget ml of water/day"
+4. One short habit about consistency/sleep appropriate for a
+   "${profile.fitnessLevel}" fitness level (e.g. sleep, stretching, or a
+   rest-day reminder) — do not repeat the three above.
 
 Respond with ONLY a JSON object matching exactly this shape (no markdown
 fences, no commentary):
@@ -142,13 +190,19 @@ fences, no commentary):
   "calorieTarget": $calorieTarget,
   "waterTarget": $waterTarget,
   "stepTarget": $stepTarget,
+  "goalDirection": "$direction",
   "exercises": [
     {"name": "<exercise name>", "sets": "<e.g. '3 sets x 12 reps' or '20 min'>", "category": "strength" | "cardio" | "mobility"}
   ],
   "exerciseFrequency": "<e.g. '3x_week'>",
   "sleepTarget": "<e.g. '7-9_hours'>",
-  "mealTracking": <bool>,
-  "recommendedHabits": [<3-5 short habit strings>],
+  "mealTracking": true,
+  "recommendedHabits": [
+    "Log your meals — aim for $calorieTarget kcal/day",
+    "Walk $stepTarget steps/day",
+    "Drink $waterTarget ml of water/day",
+    "<one short consistency/sleep habit>"
+  ],
   "milestones": [<3-5 short milestone strings tied to the goal>]
 }
 ''';
@@ -277,44 +331,6 @@ Use your best visual estimate for portion size. If nothing edible is visible, re
         .map((e) => FoodEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
-
-//   String _buildPrompt(JourneyGoal goal, PersonalProfile profile) {
-//     return '''
-// You are a fitness and nutrition planning assistant. Based on the user profile
-// below, generate a personalized daily plan. This is general wellness guidance,
-// not medical advice — do not include specific calorie deficits beyond standard
-// safe ranges, and never recommend losing more than 1kg/2.2lb per week.
-
-// User goal:
-// - type: ${goal.type}
-// - starting weight: ${goal.startingWeight} ${goal.weightUnit}
-// - current weight: ${goal.currentWeight} ${goal.weightUnit}
-// - target weight: ${goal.targetWeight} ${goal.weightUnit}
-// - target date: ${goal.targetDate?.toIso8601String()}
-
-// User profile:
-// - age: ${profile.age}
-// - gender: ${profile.gender}
-// - height: ${profile.height} ${profile.heightUnit}
-// - activity level: ${profile.activityLevel}
-// - fitness level: ${profile.fitnessLevel}
-// - diet preference: ${profile.dietPreference}
-// - food allergies: ${profile.foodAllergies.join(', ')}
-// - food restrictions: ${profile.foodRestrictions.join(', ')}
-
-// Respond with ONLY a JSON object matching exactly this shape (no markdown fences,
-// no commentary):
-// {
-//   "waterTarget": <int, ml per day>,
-//   "stepTarget": <int, steps per day>,
-//   "exerciseFrequency": "<e.g. '3x_week'>",
-//   "sleepTarget": "<e.g. '7-9_hours'>",
-//   "mealTracking": <bool>,
-//   "recommendedHabits": [<3-5 short habit strings>],
-//   "milestones": [<3-5 short milestone strings tied to the goal>]
-// }
-// ''';
-//   }
 }
 
 class GeminiServiceException implements Exception {

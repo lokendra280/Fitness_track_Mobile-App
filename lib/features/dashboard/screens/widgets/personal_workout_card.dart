@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habitflow/core/theme/app_theme.dart';
 
 class PersonalWorkoutCard extends StatelessWidget {
   const PersonalWorkoutCard({
@@ -31,7 +32,7 @@ class PersonalWorkoutCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Colors.grey.shade800, Colors.grey.shade900],
+              colors: [Colors.grey.shade800, AppColors.goalStrengthColor],
             ),
           ),
           child: Container(

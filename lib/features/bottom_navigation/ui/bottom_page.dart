@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
+import 'package:habitflow/core/constants/string.dart';
 import 'package:habitflow/features/bottom_navigation/widgets/bottom_navigation.dart';
 import 'package:habitflow/features/dashboard/screens/dashboard_screen.dart';
+import 'package:habitflow/features/weekly_review/review_screens.dart';
 
 class RootScaffold extends StatefulWidget {
   const RootScaffold({super.key});
@@ -17,12 +19,17 @@ class _RootScaffoldState extends State<RootScaffold> {
     const AdaptiveNavItem(
       icon: Assets.home,
       activeIcon: Assets.home,
-      label: 'Home',
+      label: AppString.home,
+    ),
+    const AdaptiveNavItem(
+      icon: Assets.state,
+      activeIcon: Assets.state,
+      label: AppString.progress,
     ),
     const AdaptiveNavItem(
       icon: Assets.profile,
-      activeIcon: Assets.about,
-      label: 'Me',
+      activeIcon: Assets.profile,
+      label: AppString.profile,
     ),
   ];
 
@@ -33,6 +40,7 @@ class _RootScaffoldState extends State<RootScaffold> {
         index: _index,
         children: const [
           DashboardScreen(),
+          WeeklyReviewScreen()
           // your existing screens, e.g. DashboardScreen(), CalendarScreen(), ...
         ],
       ),

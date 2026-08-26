@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
+import 'package:habitflow/core/constants/app_topography.dart';
+import 'package:habitflow/core/constants/constant_assets.dart';
+import 'package:habitflow/core/theme/app_theme.dart';
 
 /// Top greeting row: "Good morning, Alex! 👋" + bell with unread badge.
 class GreetingHeader extends StatelessWidget {
@@ -14,10 +18,34 @@ class GreetingHeader extends StatelessWidget {
   });
 
   String get _greeting {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    final now = DateTime.now();
+
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    return '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
   }
 
   @override
@@ -30,11 +58,17 @@ class GreetingHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$_greeting, $userName! 👋',
-                  style: textTheme.headlineMedium),
+              Text(
+                '$_greeting',
+                style: AppTypography.bodyLarge,
+              ),
               const SizedBox(height: 2),
-              Text("Keep going, you're doing great!",
-                  style: textTheme.bodyMedium),
+              Text(
+                "Have A Nice Day!",
+                style: AppTypography.body.copyWith(
+                  color: Colors.black,
+                ),
+              ),
             ],
           ),
         ),
@@ -66,7 +100,12 @@ class _NotificationBell extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              const Icon(Icons.notifications_none_rounded),
+              const CommonSvgWidget(
+                svgName: Assets.notification,
+                height: 20,
+                width: 20,
+              ),
+              // const Icon(Icons.notifications_none_rounded),
               if (count > 0)
                 Positioned(
                   top: -4,
