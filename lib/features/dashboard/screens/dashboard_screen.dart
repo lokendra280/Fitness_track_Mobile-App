@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/greeting_header.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/log_weight_sheet.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/metric_progress_row.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/personal_workout_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/quick_actions_grid.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/today_calendar_strip.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/weekly_goals_row.dart';
@@ -81,10 +83,18 @@ class DashboardScreen extends ConsumerWidget {
       ),
       const SizedBox(height: 20),
       const WeeklyGoalsRow(),
-      SBC.lH,
+      SBC.lHM,
       TodayCalendarStrip(
         selectedDate: DateTime.now(),
         onDateSelected: (DateTime value) {},
+      ),
+      SBC.lHM,
+
+      PersonalWorkoutCard(
+        title: "WorkOuts",
+        completedCount: 2,
+        totalCount: 10,
+        // backgroundImage: Image.asset(name),
       ),
       // JourneyCard(
       //   progress: data.progressPercentage ?? 0,
@@ -116,7 +126,8 @@ class DashboardScreen extends ConsumerWidget {
       //     ),
       //   ),
       // ),
-      const SizedBox(height: 20),
+      SBC.lHM,
+
       AiInsightCard(onTap: () => context.push('/weekly-review')),
       const SizedBox(height: 24),
       Text(

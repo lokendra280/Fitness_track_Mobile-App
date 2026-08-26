@@ -1,11 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/features/habit_tracking/providers/habit_daily_log_provider.dart';
+import 'package:habitflow/features/habit_tracking/providers/habit_proof_provider.dart';
 import 'package:habitflow/features/habit_tracking/providers/habit_tracking_provider.dart';
 import 'package:habitflow/features/habit_tracking/widgets/add_habit_shett.dart';
+import 'package:habitflow/features/habit_tracking/widgets/habit_completion_sheet.dart';
+import 'package:habitflow/features/habit_tracking/widgets/habit_journey_grid.dart';
 import 'package:habitflow/features/habit_tracking/widgets/habit_title.dart';
 
 class HabitTrackingScreen extends ConsumerWidget {
   const HabitTrackingScreen({super.key});
+
+  /// ASSUMPTION: reads `h.completedToday` — adjust to your real Habit
+  /// model's field name if different (flagged previously too).
+  Future<void> _handleToggle(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic h,
+  ) async {
+    final notifier = ref.read(habitControllerProvider.notifier);
+    final today = DateTime.now();
+
+    final alreadyDone = h.completedToday as bool? ?? false;
+    if (alreadyDone) {
+      notifier.toggleCompletion(h.name);
+      ref
+          .read(habitDailyLogProvider.notifier)
+          .log(h.name as String, today, false);
+      return;
+    }
+
+    final proofType = inferProofType(h.name as String);
+    if (proofType == HabitProofType.none) {
+      notifier.toggleCompletion(h.name);
+      ref
+          .read(habitDailyLogProvider.notifier)
+          .log(h.name as String, today, true);
+      return;
+    }
+
+    final confirmed = await showHabitCompletionSheet(
+      context,
+      ref,
+      habitName: h.name as String,
+      proofType: proofType,
+    );
+    if (confirmed) {
+      notifier.toggleCompletion(h.name);
+      ref
+          .read(habitDailyLogProvider.notifier)
+          .log(h.name as String, today, true);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -13,6 +59,11 @@ class HabitTrackingScreen extends ConsumerWidget {
     final consistency = ref.watch(habitConsistencyProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+
+    // TODO: replace with the real journey start date (e.g. from
+    // journeySetupControllerProvider) once that's available — using
+    // "today" as a stand-in start point for now.
+    final journeyStart = DateTime.now();
 
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
@@ -36,10 +87,25 @@ class HabitTrackingScreen extends ConsumerWidget {
                   for (final h in habits)
                     HabitTile(
                       habit: h,
-                      onToggle: () => ref
-                          .read(habitControllerProvider.notifier)
-                          .toggleCompletion(h.name),
+                      onToggle: () => _handleToggle(context, ref, h),
                     ),
+                  if (habits.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Text('Your journey', style: text.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Day-by-day progress across your full plan',
+                      style: text.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    for (final h in habits) ...[
+                      HabitJourneyGrid(
+                        habitName: h.name as String,
+                        journeyStart: journeyStart,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
                 ],
               ),
       ),

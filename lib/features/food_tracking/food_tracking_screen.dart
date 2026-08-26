@@ -22,7 +22,11 @@ class FoodTrackingScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Food tracking')),
+      appBar: AppBar(
+          centerTitle: true,
+          title: const Text(
+            'Track Calories',
+          )),
       backgroundColor: scheme.surfaceContainerLowest,
       body: SafeArea(
         child: CustomScrollView(slivers: [
@@ -39,14 +43,14 @@ class FoodTrackingScreen extends ConsumerWidget {
                         onTap: () =>
                             _scan(context, ref, day, ImageSource.camera))),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: ScanButton(
-                    icon: Icons.photo_library_rounded,
-                    label: 'Upload photo',
-                    subtitle: 'From gallery',
-                    onTap: () => _scan(context, ref, day, ImageSource.gallery),
-                  ),
-                ),
+                // Expanded(
+                //   child: ScanButton(
+                //     icon: Icons.photo_library_rounded,
+                //     label: 'Upload photo',
+                //     subtitle: 'From gallery',
+                //     onTap: () => _scan(context, ref, day, ImageSource.gallery),
+                //   ),
+                // ),
                 Expanded(
                   child: ScanButton(
                       icon: Icons.scanner_rounded,

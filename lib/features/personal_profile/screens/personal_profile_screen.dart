@@ -72,6 +72,33 @@ class PersonalProfileScreen extends ConsumerWidget {
                     },
                   ),
                   SBC.lHM,
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                        labelText: 'Gender', border: OutlineInputBorder()),
+                    value: profile.gender,
+                    items: const [
+                      'female',
+                      'male',
+                      'non-binary',
+                      'prefer not to say'
+                    ]
+                        .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) controller.setGender(v);
+                    },
+                  ),
+                  SBC.lHM,
+                  AppTextField(
+                    label: 'Height (${profile.heightUnit})',
+                    keyboardType: TextInputType.number,
+                    prefixIcon: Assets.bed,
+                    onChanged: (v) {
+                      final h = double.tryParse(v);
+                      if (h != null) controller.setHeight(h);
+                    },
+                  ),
+                  SBC.lHM,
                   const TextWidget(
                     title: "Activity Level",
                   ),

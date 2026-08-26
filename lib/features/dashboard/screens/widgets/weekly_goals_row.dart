@@ -48,14 +48,14 @@ class WeeklyGoalsRow extends ConsumerWidget {
             ringColor: AppColors.goalCardioColor,
             progress: data.waterProgress.clamp(0.0, 1.0),
             title: 'Water',
-            subtitle: '$waterCurrentMl / ${data.waterTarget} ml',
+            subtitle: '${waterCurrentMl} ml',
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: GoalRingCard(
             periodLabel: 'DAILY',
-            streakCount: 0, // TODO: wire to a real calorie-streak provider
+            streakCount: 0,
             icon: Icons.local_fire_department_rounded,
             ringColor: AppColors.goalStrengthColor,
             progress: data.calorieProgress.clamp(0.0, 1.0),

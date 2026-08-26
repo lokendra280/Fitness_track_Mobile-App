@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/models/ai_plan.dart';
 import '../providers/ai_plan_provider.dart';
+import '../../habit_tracking/providers/habit_proof_provider.dart';
 
 class AiPlanScreen extends ConsumerWidget {
   const AiPlanScreen({super.key});
@@ -17,7 +20,7 @@ class AiPlanScreen extends ConsumerWidget {
       backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: generation.when(
-          loading: () => _LoadingState(theme: theme, colorScheme: colorScheme),
+          loading: () => const _LoadingState(),
           error: (err, _) => _ErrorState(
             message: err.toString(),
             onRetry: () => ref.invalidate(aiPlanGenerationProvider),
@@ -29,48 +32,96 @@ class AiPlanScreen extends ConsumerWidget {
   }
 }
 
-class _LoadingState extends StatelessWidget {
-  final ThemeData theme;
-  final ColorScheme colorScheme;
-  const _LoadingState({required this.theme, required this.colorScheme});
+/// Cycles through the plan's target categories while it generates —
+/// reads as "actively building something" rather than a static spinner.
+class _LoadingState extends StatefulWidget {
+  const _LoadingState();
+
+  @override
+  State<_LoadingState> createState() => _LoadingStateState();
+}
+
+class _LoadingStateState extends State<_LoadingState>
+    with SingleTickerProviderStateMixin {
+  static const _steps = [
+    (Icons.water_drop_rounded, 'Calculating your water target'),
+    (Icons.directions_walk_rounded, 'Setting a daily step goal'),
+    (Icons.fitness_center_rounded, 'Planning your exercise routine'),
+    (Icons.bedtime_rounded, 'Balancing your sleep schedule'),
+    (Icons.checklist_rounded, 'Choosing habits that fit'),
+  ];
+
+  int _index = 0;
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1400), (_) {
+      if (mounted) setState(() => _index = (_index + 1) % _steps.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final (icon, label) = _steps[_index];
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primaryContainer,
-              ),
-              child: Center(
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    color: colorScheme.primary,
+            SizedBox(
+              width: 88,
+              height: 88,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const SizedBox(
+                    width: 88,
+                    height: 88,
+                    child: CircularProgressIndicator(strokeWidth: 3),
                   ),
-                ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: FadeTransition(opacity: anim, child: child),
+                    ),
+                    child: Icon(
+                      icon,
+                      key: ValueKey(icon),
+                      size: 32,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             Text(
               'Building your plan',
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
-              'Tailoring targets to what you told us…',
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                label,
+                key: ValueKey(label),
+                style: theme.textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ),
@@ -153,7 +204,7 @@ class _PlanReview extends ConsumerWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   colorScheme.primary,
-                  colorScheme.primary.withOpacity(0.82)
+                  colorScheme.primary.withValues(alpha: 0.82)
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -167,7 +218,7 @@ class _PlanReview extends ConsumerWidget {
                 Text(
                   'Step 3 of 3',
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onPrimary.withOpacity(0.85),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -181,7 +232,7 @@ class _PlanReview extends ConsumerWidget {
                 Text(
                   'Built around your goals, activity, and diet.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onPrimary.withOpacity(0.85),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
               ],
@@ -224,8 +275,7 @@ class _PlanReview extends ConsumerWidget {
               ),
               if (plan.recommendedHabits.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                _ListSection(
-                  icon: Icons.check_circle_outline_rounded,
+                _HabitListSection(
                   title: 'Recommended habits',
                   items: plan.recommendedHabits,
                 ),
@@ -243,7 +293,8 @@ class _PlanReview extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -254,7 +305,9 @@ class _PlanReview extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Not medical advice — a general wellness plan based on what you told us.',
+                        'Habits marked with a camera or water icon will '
+                        'ask for a quick photo or glass count when you '
+                        'complete them — everything else is a simple tap.',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -366,8 +419,8 @@ class _PlanReview extends ConsumerWidget {
                     labelText: 'Water target (ml)',
                     prefixIcon: const Icon(Icons.water_drop_rounded, size: 20),
                     filled: true,
-                    fillColor:
-                        colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                    fillColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.4),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -383,8 +436,8 @@ class _PlanReview extends ConsumerWidget {
                     prefixIcon:
                         const Icon(Icons.directions_walk_rounded, size: 20),
                     filled: true,
-                    fillColor:
-                        colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                    fillColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.4),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -449,7 +502,7 @@ class _PlanTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.04),
+            color: colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -461,7 +514,7 @@ class _PlanTile extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -501,7 +554,7 @@ class _ListSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.04),
+            color: colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -524,6 +577,69 @@ class _ListSection extends StatelessWidget {
                   ],
                 ),
               )),
+        ],
+      ),
+    );
+  }
+}
+
+/// Same shape as _ListSection but adds a proof-type icon (camera/water)
+/// next to any recommended habit that inferProofType() flags as needing
+/// evidence — makes it visible upfront, before the user even accepts.
+class _HabitListSection extends StatelessWidget {
+  final String title;
+  final List<String> items;
+
+  const _HabitListSection({required this.title, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 12),
+          ...items.map((item) {
+            final proofType = inferProofType(item);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check_circle_outline_rounded,
+                      size: 18, color: colorScheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: Text(item, style: theme.textTheme.bodyMedium)),
+                  if (proofType != HabitProofType.none)
+                    Icon(
+                      proofType == HabitProofType.photo
+                          ? Icons.camera_alt_rounded
+                          : Icons.local_drink_rounded,
+                      size: 16,
+                      color: colorScheme.secondary,
+                    ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:habitflow/data/services/plan_calculator.dart';
 import 'package:http/http.dart' as http;
 import '../models/journey_goal.dart';
 import '../models/personal_profile.dart';
@@ -21,7 +22,31 @@ class GeminiService {
     required JourneyGoal goal,
     required PersonalProfile profile,
   }) async {
-    final prompt = _buildPrompt(goal, profile);
+    final weightKg =
+        PlanCalculator.kgFrom(goal.currentWeight ?? 0, goal.weightUnit);
+    final heightCm =
+        PlanCalculator.cmFrom(profile.height ?? 0, profile.heightUnit);
+    final bmrValue = PlanCalculator.bmr(
+        weightKg: weightKg,
+        heightCm: heightCm,
+        age: profile.age ?? 0,
+        gender: profile.gender ?? '');
+    final tdeeValue = PlanCalculator.tdee(
+        bmr: bmrValue, activityLevel: profile.activityLevel ?? '');
+    final calorieTargetValue =
+        PlanCalculator.calorieTarget(tdee: tdeeValue, goalType: goal.type);
+    final waterTargetValue = PlanCalculator.waterTargetMl(
+        weightKg: weightKg, activityLevel: profile.activityLevel ?? '');
+    final stepTargetValue = PlanCalculator.stepTarget(
+        activityLevel: profile.activityLevel ?? '', goalType: goal.type);
+
+    final prompt = _buildPrompt(
+      goal,
+      profile,
+      calorieTarget: calorieTargetValue,
+      waterTarget: waterTargetValue,
+      stepTarget: stepTargetValue,
+    );
 
     final response = await http.post(
       _endpoint,
@@ -62,7 +87,71 @@ class GeminiService {
           'Gemini returned non-JSON output: $e\n$text');
     }
 
+    // Deterministic values always win over whatever the model echoed back —
+    // never trust unverified LLM arithmetic for numbers that gate real behavior.
+    planJson['calorieTarget'] = calorieTargetValue;
+    planJson['waterTarget'] = waterTargetValue;
+    planJson['stepTarget'] = stepTargetValue;
+
     return AiPlan.fromJson(planJson);
+  }
+
+  String _buildPrompt(
+    JourneyGoal goal,
+    PersonalProfile profile, {
+    required int calorieTarget,
+    required int waterTarget,
+    required int stepTarget,
+  }) {
+    return '''
+You are a fitness and nutrition planning assistant. This is general wellness
+guidance, not medical advice.
+
+These daily numeric targets have already been calculated using standard
+formulas — return them in your JSON EXACTLY as given, do not recalculate them:
+- calorieTarget: $calorieTarget
+- waterTarget: $waterTarget
+- stepTarget: $stepTarget
+
+User goal:
+- type: ${goal.type}
+- starting weight: ${goal.startingWeight} ${goal.weightUnit}
+- current weight: ${goal.currentWeight} ${goal.weightUnit}
+- target weight: ${goal.targetWeight} ${goal.weightUnit}
+- target date: ${goal.targetDate?.toIso8601String()}
+
+User profile:
+- age: ${profile.age}
+- gender: ${profile.gender}
+- height: ${profile.height} ${profile.heightUnit}
+- activity level: ${profile.activityLevel}
+- fitness level: ${profile.fitnessLevel}
+- diet preference: ${profile.dietPreference}
+- food allergies: ${profile.foodAllergies.join(', ')}
+- food restrictions: ${profile.foodRestrictions.join(', ')}
+
+Choose 4-6 specific exercises appropriate for a "${profile.fitnessLevel}"
+fitness level working toward "${goal.type}". Mix strength moves (e.g. squats,
+lunges, push-ups, planks) with cardio/mobility as fits their level — assume
+bodyweight/basic gym equipment unless told otherwise. Give each a concrete
+sets/reps or duration.
+
+Respond with ONLY a JSON object matching exactly this shape (no markdown
+fences, no commentary):
+{
+  "calorieTarget": $calorieTarget,
+  "waterTarget": $waterTarget,
+  "stepTarget": $stepTarget,
+  "exercises": [
+    {"name": "<exercise name>", "sets": "<e.g. '3 sets x 12 reps' or '20 min'>", "category": "strength" | "cardio" | "mobility"}
+  ],
+  "exerciseFrequency": "<e.g. '3x_week'>",
+  "sleepTarget": "<e.g. '7-9_hours'>",
+  "mealTracking": <bool>,
+  "recommendedHabits": [<3-5 short habit strings>],
+  "milestones": [<3-5 short milestone strings tied to the goal>]
+}
+''';
   }
 
   /// Phase 6: plain-text summary of a day's tracked data.
@@ -189,43 +278,43 @@ Use your best visual estimate for portion size. If nothing edible is visible, re
         .toList();
   }
 
-  String _buildPrompt(JourneyGoal goal, PersonalProfile profile) {
-    return '''
-You are a fitness and nutrition planning assistant. Based on the user profile
-below, generate a personalized daily plan. This is general wellness guidance,
-not medical advice — do not include specific calorie deficits beyond standard
-safe ranges, and never recommend losing more than 1kg/2.2lb per week.
+//   String _buildPrompt(JourneyGoal goal, PersonalProfile profile) {
+//     return '''
+// You are a fitness and nutrition planning assistant. Based on the user profile
+// below, generate a personalized daily plan. This is general wellness guidance,
+// not medical advice — do not include specific calorie deficits beyond standard
+// safe ranges, and never recommend losing more than 1kg/2.2lb per week.
 
-User goal:
-- type: ${goal.type}
-- starting weight: ${goal.startingWeight} ${goal.weightUnit}
-- current weight: ${goal.currentWeight} ${goal.weightUnit}
-- target weight: ${goal.targetWeight} ${goal.weightUnit}
-- target date: ${goal.targetDate?.toIso8601String()}
+// User goal:
+// - type: ${goal.type}
+// - starting weight: ${goal.startingWeight} ${goal.weightUnit}
+// - current weight: ${goal.currentWeight} ${goal.weightUnit}
+// - target weight: ${goal.targetWeight} ${goal.weightUnit}
+// - target date: ${goal.targetDate?.toIso8601String()}
 
-User profile:
-- age: ${profile.age}
-- gender: ${profile.gender}
-- height: ${profile.height} ${profile.heightUnit}
-- activity level: ${profile.activityLevel}
-- fitness level: ${profile.fitnessLevel}
-- diet preference: ${profile.dietPreference}
-- food allergies: ${profile.foodAllergies.join(', ')}
-- food restrictions: ${profile.foodRestrictions.join(', ')}
+// User profile:
+// - age: ${profile.age}
+// - gender: ${profile.gender}
+// - height: ${profile.height} ${profile.heightUnit}
+// - activity level: ${profile.activityLevel}
+// - fitness level: ${profile.fitnessLevel}
+// - diet preference: ${profile.dietPreference}
+// - food allergies: ${profile.foodAllergies.join(', ')}
+// - food restrictions: ${profile.foodRestrictions.join(', ')}
 
-Respond with ONLY a JSON object matching exactly this shape (no markdown fences,
-no commentary):
-{
-  "waterTarget": <int, ml per day>,
-  "stepTarget": <int, steps per day>,
-  "exerciseFrequency": "<e.g. '3x_week'>",
-  "sleepTarget": "<e.g. '7-9_hours'>",
-  "mealTracking": <bool>,
-  "recommendedHabits": [<3-5 short habit strings>],
-  "milestones": [<3-5 short milestone strings tied to the goal>]
-}
-''';
-  }
+// Respond with ONLY a JSON object matching exactly this shape (no markdown fences,
+// no commentary):
+// {
+//   "waterTarget": <int, ml per day>,
+//   "stepTarget": <int, steps per day>,
+//   "exerciseFrequency": "<e.g. '3x_week'>",
+//   "sleepTarget": "<e.g. '7-9_hours'>",
+//   "mealTracking": <bool>,
+//   "recommendedHabits": [<3-5 short habit strings>],
+//   "milestones": [<3-5 short milestone strings tied to the goal>]
+// }
+// ''';
+//   }
 }
 
 class GeminiServiceException implements Exception {

@@ -6,7 +6,6 @@ import '../../../data/services/gemini_service.dart';
 import '../../../data/repositories/journey_repository_provider.dart';
 import '../../journey_setup/providers/journey_setup_provider.dart';
 import '../../personal_profile/providers/personal_profile_provider.dart';
-import '../../habit_tracking/habit_tracking_screen.dart';
 
 /// The spec's default habit set — seeded once, in addition to whatever
 /// habits the AI plan itself recommends.

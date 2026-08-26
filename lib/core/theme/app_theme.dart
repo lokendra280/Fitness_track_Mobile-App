@@ -8,6 +8,7 @@ class AppColors {
   static const journeyGradientBottom = Color(0xFF163A32);
   static const textPrimary = Color(0xFF111827);
   static const textSecondary = Color(0xFF6B7280);
+  static const background = Color(0xFFF7F3E9);
 
   static const calories = Color(0xFFF6A23A);
   static const caloriesBg = Color(0xFFFDEEDA);
@@ -20,6 +21,7 @@ class AppColors {
   static const sleep = Color(0xFF6C6FDA);
   static const sleepBg = Color(0xFFE6E6FB);
   static const textMuted = Color(0xFF9CA3AF);
+  static const surfaceMuted = Color(0xFFEFEAE0);
 
   static const goalStepsColor = Color(0xFFF4A73C);
   static const goalCardioColor = Color(0xFFE8555A);

@@ -57,7 +57,7 @@ class GoalRingCard extends StatelessWidget {
         border: Border.all(color: AppColors.goalCardBorder),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
@@ -109,7 +109,10 @@ class GoalRingCard extends StatelessWidget {
           SizedBox(height: padding * 0.7),
           Text(
             title,
-            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 2),
           Text(
