@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/auth/ui/sign_in_screen.dart';
+import 'package:habitflow/features/auth/ui/sign_up_screen.dart';
+import 'package:habitflow/features/auth/ui/verify_otp_screen.dart';
 import 'package:habitflow/features/bottom_navigation/ui/bottom_page.dart';
 
 import 'package:habitflow/features/food_tracking/bar_code_scanner.dart';
 import 'package:habitflow/features/onboarding/pages/onboarding_screen.dart';
+import 'package:habitflow/features/onboarding/services/onboarding_prefs.dart';
 import 'package:habitflow/features/reports/pages/statistics_screen.dart';
 import 'package:habitflow/features/splash/splash_screen.dart';
 import 'package:habitflow/features/steps/ui/step_count_screen.dart';
@@ -26,6 +32,7 @@ import 'package:habitflow/features/weekly_review/review_screens.dart';
 import 'package:habitflow/features/milestones/milestones_screen.dart';
 import 'package:habitflow/features/reports/journey_completion_screen.dart';
 import 'package:habitflow/core/privacy/consent_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Route path constants — reference these instead of hardcoded strings
 /// (context.push('/food') etc.) wherever possible, so a typo'd path
@@ -56,23 +63,36 @@ abstract class AppRoutes {
   static const barcode = '/barcode';
   static const privacy = '/privacy';
   static const bottomNavbar = '/botoomNav';
+  static const signIn = '/sign-In';
   static const signUp = '/sign-up';
   static const oneBoarding = '/onBoarding';
+  static const verifyOtp = '/verify-opt';
 }
 
-/// Builds the GoRouter's route table. Kept separate from the provider
-/// itself so it's a plain, easily-testable function.
 List<RouteBase> buildAppRoutes() {
   return [
     GoRoute(
       path: AppRoutes.oneBoarding,
-      builder: (_, __) => OnboardingScreen(
-        onFinished: () {},
+      builder: (context, __) => OnboardingScreen(
+        onFinished: () async {
+          await OnboardingPrefs.markCompleted();
+          if (context.mounted) {
+            context.go(AppRoutes.bottomNavbar);
+          }
+        },
       ),
     ),
     GoRoute(
-      path: AppRoutes.signUp,
+      path: AppRoutes.signIn,
       builder: (_, __) => const SignInScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.verifyOtp,
+      builder: (_, __) => const VerifyOtpScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.signUp,
+      builder: (_, __) => const SignUpScreen(),
     ),
     GoRoute(
       path: AppRoutes.journeySetup,
@@ -84,7 +104,7 @@ List<RouteBase> buildAppRoutes() {
     ),
     GoRoute(
       path: AppRoutes.personalProfile,
-      builder: (_, __) => const PersonalProfileScreen(),
+      builder: (_, __) => const ProfileScreen(),
     ),
     GoRoute(
       path: AppRoutes.aiPlan,
@@ -171,8 +191,73 @@ List<RouteBase> buildAppRoutes() {
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final initialLocation = ref.watch(initialLocationProvider);
+  final journeyRepository = ref.watch(journeyRepositoryProvider);
+
   return GoRouter(
     initialLocation: initialLocation,
+    refreshListenable: GoRouterRefreshStream(
+      Supabase.instance.client.auth.onAuthStateChange,
+    ),
+    redirect: (context, state) async {
+      final location = state.matchedLocation;
+      final isOnSplash = location == AppRoutes.splash;
+
+      if (isOnSplash) return null;
+
+      final hasCompletedOnboarding =
+          await OnboardingPrefs.hasCompletedOnboarding();
+      final isSignedIn = Supabase.instance.client.auth.currentSession != null;
+
+      final hasCompletedSetup = journeyRepository.hasCompletedSetup;
+      final hasGeneratedPlan = journeyRepository.hasGeneratedPlan;
+
+      final isOnOnboarding = location == AppRoutes.oneBoarding;
+      final isOnSignIn = location == AppRoutes.signIn;
+      final isOnSignUp = location == AppRoutes.signUp;
+      final isOnVerifyOtp = location == AppRoutes.verifyOtp;
+
+      const setupFlowRoutes = {
+        AppRoutes.journeySetup,
+        AppRoutes.personalProfile,
+        AppRoutes.aiPlan,
+      };
+      final isOnSetupFlow = setupFlowRoutes.contains(location);
+      final isOnPersonalProfileOrEarlier = location == AppRoutes.journeySetup ||
+          location == AppRoutes.personalProfile;
+
+      // Gate 1: onboarding, always first.
+      if (!hasCompletedOnboarding) {
+        return isOnOnboarding ? null : AppRoutes.oneBoarding;
+      }
+
+      // Gate 2: must be signed in.
+      if (!isSignedIn) {
+        return (isOnSignIn || isOnSignUp || isOnVerifyOtp)
+            ? null
+            : AppRoutes.signIn;
+      }
+
+      // Gate 3: must have completed journey setup. Allow the whole
+      // setup flow through, not just the entry screen — otherwise
+      // step 2/3 immediately bounce back to step 1 on every push.
+      if (!hasCompletedSetup) {
+        return isOnPersonalProfileOrEarlier ? null : AppRoutes.journeySetup;
+      }
+      if (!hasGeneratedPlan) {
+        return location == AppRoutes.aiPlan ? null : AppRoutes.aiPlan;
+      }
+
+      // All gates passed: don't let the user land back on an intro screen.
+      if (isOnOnboarding ||
+          isOnSignIn ||
+          isOnSignUp ||
+          isOnVerifyOtp ||
+          isOnSetupFlow) {
+        return AppRoutes.bottomNavbar;
+      }
+
+      return null;
+    },
     routes: buildAppRoutes(),
   );
 });
@@ -182,3 +267,18 @@ final initialLocationProvider = Provider<String>((ref) {
     'initialLocationProvider must be overridden in main.dart',
   );
 });
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}

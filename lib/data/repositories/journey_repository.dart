@@ -1,10 +1,13 @@
+import 'package:habitflow/data/repositories/journey_remote_repository.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/journey_goal.dart';
 import '../models/personal_profile.dart';
 import '../models/ai_plan.dart';
 import '../models/tracking_models.dart';
 
-String _dk(String prefix, DateTime d) => '${prefix}_${d.toIso8601String().split('T').first}';
+String _dk(String prefix, DateTime d) =>
+    '${prefix}_${d.toIso8601String().split('T').first}';
 
 const _kJourneyGoalKey = 'journey_goal';
 const _kPersonalProfileKey = 'personal_profile';
@@ -34,8 +37,10 @@ class JourneyRepository {
     return JourneyGoal.fromJson(Map<String, dynamic>.from(raw as Map));
   }
 
-  Future<void> saveGoal(JourneyGoal goal) => box.put(_kJourneyGoalKey, goal.toJson());
-
+  Future<void> saveGoal(JourneyGoal goal) async {
+    await box.put(_kJourneyGoalKey, goal.toJson());
+    await _syncProfileToRemote();
+  }
   // --- Phase 1: personal profile ---
 
   PersonalProfile loadProfile() {
@@ -44,8 +49,27 @@ class JourneyRepository {
     return PersonalProfile.fromJson(Map<String, dynamic>.from(raw as Map));
   }
 
-  Future<void> saveProfile(PersonalProfile profile) =>
-      box.put(_kPersonalProfileKey, profile.toJson());
+  Future<void> saveProfile(PersonalProfile profile) async {
+    await box.put(_kPersonalProfileKey, profile.toJson());
+    await _syncProfileToRemote();
+  }
+
+  /// Best-effort push to Supabase — local save always succeeds even if this
+  /// fails (offline, etc.), so the app stays usable without connectivity.
+  Future<void> _syncProfileToRemote() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      await JourneyRemoteRepository().upsertGoalAndProfile(
+        userId: userId,
+        goal: loadGoal(),
+        profile: loadProfile(),
+      );
+    } catch (_) {
+      // Swallow — local Hive write already succeeded; remote will catch up
+      // next time saveGoal/saveProfile runs successfully, or on next hydrate.
+    }
+  }
 
   bool get hasCompletedSetup {
     final goal = loadGoal();
@@ -54,6 +78,7 @@ class JourneyRepository {
   }
 
   // --- Phase 2: AI plan ---
+  bool get hasGeneratedPlan => loadAiPlan() != null;
 
   AiPlan? loadAiPlan() {
     final raw = box.get(_kAiPlanKey);
@@ -61,7 +86,16 @@ class JourneyRepository {
     return AiPlan.fromJson(Map<String, dynamic>.from(raw as Map));
   }
 
-  Future<void> saveAiPlan(AiPlan plan) => box.put(_kAiPlanKey, plan.toJson());
+  Future<void> saveAiPlan(AiPlan plan) async {
+    await box.put(_kAiPlanKey, plan.toJson());
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      await JourneyRemoteRepository().upsertPlan(userId: userId, plan: plan);
+    } catch (_) {
+      // Same best-effort policy as _syncProfileToRemote.
+    }
+  }
 
   Future<void> clearAiPlan() => box.delete(_kAiPlanKey);
 
@@ -75,9 +109,9 @@ class JourneyRepository {
 
   Future<void> logWeight(double weight, {DateTime? date}) async {
     final entries = _rawWeightLog();
-    entries.add({'date': (date ?? DateTime.now()).toIso8601String(), 'weight': weight});
+    entries.add(
+        {'date': (date ?? DateTime.now()).toIso8601String(), 'weight': weight});
     await box.put(_kWeightLogKey, entries);
-    // Keep the goal's currentWeight in sync so progress calcs stay correct.
     await saveGoal(loadGoal().copyWith(currentWeight: weight));
   }
 
@@ -96,7 +130,9 @@ class JourneyRepository {
 
   // --- Phase 4: food ---
   List<FoodEntry> foodEntriesFor(DateTime day) =>
-      ((box.get(_dk('food', day)) as List?) ?? []).map((e) => FoodEntry.fromJson(Map.from(e))).toList();
+      ((box.get(_dk('food', day)) as List?) ?? [])
+          .map((e) => FoodEntry.fromJson(Map.from(e)))
+          .toList();
   Future<void> saveFoodEntry(DateTime day, FoodEntry e) async {
     final list = foodEntriesFor(day)..add(e);
     await box.put(_dk('food', day), list.map((e) => e.toJson()).toList());
@@ -104,59 +140,78 @@ class JourneyRepository {
 
   // --- Phase 4: water (ml) ---
   int waterFor(DateTime day) => (box.get(_dk('water', day)) as int?) ?? 0;
-  Future<void> saveWater(DateTime day, int ml) => box.put(_dk('water', day), ml);
+  Future<void> saveWater(DateTime day, int ml) =>
+      box.put(_dk('water', day), ml);
 
   // --- Phase 4: workouts ---
   List<WorkoutEntry> workoutsFor(DateTime day) =>
-      ((box.get(_dk('workouts', day)) as List?) ?? []).map((e) => WorkoutEntry.fromJson(Map.from(e))).toList();
+      ((box.get(_dk('workouts', day)) as List?) ?? [])
+          .map((e) => WorkoutEntry.fromJson(Map.from(e)))
+          .toList();
   Future<void> logWorkout(DateTime day, WorkoutEntry w) async {
     final list = workoutsFor(day)..add(w);
     await box.put(_dk('workouts', day), list.map((e) => e.toJson()).toList());
   }
+
   int stepsFor(DateTime day) => (box.get(_dk('steps', day)) as int?) ?? 0;
-  Future<void> saveSteps(DateTime day, int steps) => box.put(_dk('steps', day), steps);
+  Future<void> saveSteps(DateTime day, int steps) =>
+      box.put(_dk('steps', day), steps);
 
   // --- Phase 4: sleep ---
   SleepEntry? sleepFor(DateTime day) {
     final raw = box.get(_dk('sleep', day));
     return raw == null ? null : SleepEntry.fromJson(Map.from(raw));
   }
-  Future<void> saveSleep(DateTime day, SleepEntry s) => box.put(_dk('sleep', day), s.toJson());
+
+  Future<void> saveSleep(DateTime day, SleepEntry s) =>
+      box.put(_dk('sleep', day), s.toJson());
 
   // --- Phase 4: body measurements ---
   List<BodyMeasurement> measurements() =>
-      ((box.get('measurements') as List?) ?? []).map((e) => BodyMeasurement.fromJson(Map.from(e))).toList();
+      ((box.get('measurements') as List?) ?? [])
+          .map((e) => BodyMeasurement.fromJson(Map.from(e)))
+          .toList();
   Future<void> addMeasurement(BodyMeasurement m) async {
     final list = measurements()..add(m);
     await box.put('measurements', list.map((e) => e.toJson()).toList());
   }
 
   // --- Phase 5: habits ---
-  List<Habit> habits() => ((box.get('habits') as List?) ?? []).map((e) => Habit.fromJson(Map.from(e))).toList();
-  Future<void> saveHabits(List<Habit> list) => box.put('habits', list.map((e) => e.toJson()).toList());
+  List<Habit> habits() => ((box.get('habits') as List?) ?? [])
+      .map((e) => Habit.fromJson(Map.from(e)))
+      .toList();
+  Future<void> saveHabits(List<Habit> list) =>
+      box.put('habits', list.map((e) => e.toJson()).toList());
 
   DailyCheckIn? checkInFor(DateTime day) {
     final raw = box.get(_dk('checkin', day));
     return raw == null ? null : DailyCheckIn.fromJson(Map.from(raw));
   }
-  Future<void> saveCheckIn(DateTime day, DailyCheckIn c) => box.put(_dk('checkin', day), c.toJson());
+
+  Future<void> saveCheckIn(DateTime day, DailyCheckIn c) =>
+      box.put(_dk('checkin', day), c.toJson());
 
   // --- Phase 6: AI coach chat history ---
-  List<ChatMessage> chatHistory() =>
-      ((box.get('chat_history') as List?) ?? []).map((e) => ChatMessage.fromJson(Map.from(e))).toList();
+  List<ChatMessage> chatHistory() => ((box.get('chat_history') as List?) ?? [])
+      .map((e) => ChatMessage.fromJson(Map.from(e)))
+      .toList();
   Future<void> saveChatHistory(List<ChatMessage> list) =>
       box.put('chat_history', list.map((e) => e.toJson()).toList());
 
   // --- Phase 7: milestones & streaks ---
   List<Milestone> achievedMilestones() =>
-      ((box.get('milestones') as List?) ?? []).map((e) => Milestone.fromJson(Map.from(e))).toList();
+      ((box.get('milestones') as List?) ?? [])
+          .map((e) => Milestone.fromJson(Map.from(e)))
+          .toList();
   Future<void> addMilestone(Milestone m) async {
     final list = achievedMilestones()..add(m);
     await box.put('milestones', list.map((e) => e.toJson()).toList());
   }
 
-  Map<String, int> streaks() => Map<String, int>.from(box.get('streaks') as Map? ?? {});
-  Future<void> saveStreaks(Map<String, int> streaks) => box.put('streaks', streaks);
+  Map<String, int> streaks() =>
+      Map<String, int>.from(box.get('streaks') as Map? ?? {});
+  Future<void> saveStreaks(Map<String, int> streaks) =>
+      box.put('streaks', streaks);
 
   DateTime? lastActiveDateFor(String type) {
     final raw = box.get('last_active_$type');
@@ -189,20 +244,25 @@ class JourneyRepository {
 
   // --- Phase 4: progress photos (private local paths only) ---
   List<ProgressPhoto> progressPhotos() =>
-      ((box.get('progress_photos') as List?) ?? []).map((e) => ProgressPhoto.fromJson(Map.from(e))).toList();
+      ((box.get('progress_photos') as List?) ?? [])
+          .map((e) => ProgressPhoto.fromJson(Map.from(e)))
+          .toList();
   Future<void> addProgressPhoto(ProgressPhoto p) async {
     final list = progressPhotos()..add(p);
     await box.put('progress_photos', list.map((e) => e.toJson()).toList());
   }
 
   // --- Phase 4: food search history / favorites ---
-  List<String> recentFoodNames() => ((box.get('recent_foods') as List?) ?? []).cast<String>();
+  List<String> recentFoodNames() =>
+      ((box.get('recent_foods') as List?) ?? []).cast<String>();
   Future<void> recordRecentFood(String name) async {
-    final list = recentFoodNames().where((n) => n != name).toList()..insert(0, name);
+    final list = recentFoodNames().where((n) => n != name).toList()
+      ..insert(0, name);
     await box.put('recent_foods', list.take(20).toList());
   }
 
-  List<String> favoriteFoodNames() => ((box.get('favorite_foods') as List?) ?? []).cast<String>();
+  List<String> favoriteFoodNames() =>
+      ((box.get('favorite_foods') as List?) ?? []).cast<String>();
   Future<void> toggleFavoriteFood(String name) async {
     final list = favoriteFoodNames();
     list.contains(name) ? list.remove(name) : list.add(name);
@@ -214,7 +274,8 @@ class JourneyRepository {
   Future<void> markCompleted() => box.put('journey_completed', true);
 
   // --- Phase 10: consent ---
-  bool get hasHealthDataConsent => (box.get('consent_health') as bool?) ?? false;
+  bool get hasHealthDataConsent =>
+      (box.get('consent_health') as bool?) ?? false;
   bool get hasAiDataConsent => (box.get('consent_ai') as bool?) ?? false;
   Future<void> setConsent({bool? health, bool? ai}) async {
     if (health != null) await box.put('consent_health', health);

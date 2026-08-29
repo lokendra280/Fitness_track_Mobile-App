@@ -26,9 +26,6 @@ import '../providers/dashboard_providers.dart';
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  /// dashboardDataProvider only exposes progress ratios + a couple of
-  /// targets, so the four rows are built here rather than stored on the
-  /// model itself.
   List<ProgressMetric> _metrics(DashboardData data, int realSteps) {
     final waterCurrent = (data.waterProgress * data.waterTarget).round();
     final stepsProgress = (realSteps / data.stepTarget).clamp(0.0, 1.0);

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/size_constant.dart';
+import 'package:habitflow/core/router/app_router.dart';
 import '../providers/journey_setup_provider.dart';
 
 class JourneySetupScreen extends ConsumerStatefulWidget {
@@ -44,7 +46,7 @@ class _JourneySetupScreenState extends ConsumerState<JourneySetupScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: _StepHeader(
                 step: 1,
                 totalSteps: 3,
@@ -80,7 +82,7 @@ class _JourneySetupScreenState extends ConsumerState<JourneySetupScreen> {
                       onSelectionChanged: (s) => controller.updateType(s.first),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SBC.mH,
                   _SectionCard(
                     icon: Icons.monitor_weight_rounded,
                     title: 'Weight',
@@ -97,7 +99,7 @@ class _JourneySetupScreenState extends ConsumerState<JourneySetupScreen> {
                                 v), // current defaults to starting weight
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SBC.mH,
                         _PremiumTextField(
                           controller: _targetCtrl,
                           label: 'Target weight',
@@ -107,7 +109,7 @@ class _JourneySetupScreenState extends ConsumerState<JourneySetupScreen> {
                               target: double.tryParse(v)),
                         ),
                         if (goal.weightToLose != null) ...[
-                          const SizedBox(height: 16),
+                          SBC.mH,
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
@@ -143,62 +145,91 @@ class _JourneySetupScreenState extends ConsumerState<JourneySetupScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SBC.mH,
                   _SectionCard(
                     icon: Icons.event_rounded,
                     title: 'Timeline',
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate:
-                              DateTime.now().add(const Duration(days: 90)),
-                          firstDate: DateTime.now(),
-                          lastDate:
-                              DateTime.now().add(const Duration(days: 730)),
-                        );
-                        if (picked != null)
-                          controller.updateDates(target: picked);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: colorScheme.outlineVariant),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InkWell(
                           borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_month_rounded,
-                                color: colorScheme.primary),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                goal.targetDate == null
-                                    ? 'Pick a target date'
-                                    : goal.targetDate!
-                                        .toLocal()
-                                        .toString()
-                                        .split(' ')
-                                        .first,
-                                style: theme.textTheme.bodyLarge,
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate:
+                                  DateTime.now().add(const Duration(days: 90)),
+                              firstDate: DateTime.now(),
+                              lastDate:
+                                  DateTime.now().add(const Duration(days: 730)),
+                            );
+                            if (picked != null)
+                              controller.updateDates(target: picked);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 16),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: goal.targetDate == null
+                                    ? colorScheme.error
+                                    : colorScheme.outlineVariant,
                               ),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            Icon(Icons.chevron_right_rounded,
-                                color: colorScheme.onSurfaceVariant),
-                          ],
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_month_rounded,
+                                    color: colorScheme.primary),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    goal.targetDate == null
+                                        ? 'Pick a target date'
+                                        : goal.targetDate!
+                                            .toLocal()
+                                            .toString()
+                                            .split(' ')
+                                            .first,
+                                    style: theme.textTheme.bodyLarge,
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right_rounded,
+                                    color: colorScheme.onSurfaceVariant),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        if (goal.targetDate == null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Required to continue',
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: colorScheme.error),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: 32),
                   FilledButton(
                     onPressed: isValid
                         ? () async {
-                            await controller.submit();
-                            if (context.mounted)
-                              context.push('/personal-profile');
+                            try {
+                              await controller.submit();
+                              if (context.mounted)
+                                context.push(AppRoutes.personalProfile);
+                            } catch (e, st) {
+                              debugPrint(
+                                  'Journey setup submit failed: $e\n$st');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content:
+                                          Text('Something went wrong: $e')),
+                                );
+                              }
+                            }
                           }
                         : null,
                     style: FilledButton.styleFrom(

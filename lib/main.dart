@@ -21,9 +21,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         journeyRepositoryProvider.overrideWithValue(repository),
-        initialLocationProvider.overrideWithValue(
-          repository.hasCompletedSetup ? '/splash' : '/journey-setup',
-        ),
+        initialLocationProvider.overrideWithValue(AppRoutes.splash),
       ],
       child: const WeightLossJourneyApp(),
     ),

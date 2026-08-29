@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,18 +7,22 @@ import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/core/router/app_router.dart';
+import 'package:habitflow/data/repositories/journey_repository_provider.dart';
+import 'package:habitflow/features/onboarding/services/onboarding_prefs.dart';
 import 'package:lottie/lottie.dart';
 
 import 'package:habitflow/core/theme/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SplashPage extends StatefulWidget {
+class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
+class _SplashPageState extends ConsumerState<SplashPage>
+    with TickerProviderStateMixin {
   static const _gold = Color(0xFFF4C04F);
 
   late final AnimationController _entrance = AnimationController(
@@ -41,16 +46,38 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       curve: const Interval(0.15, 1.0, curve: Curves.easeOutCubic),
     ),
   );
+
   @override
   void initState() {
     super.initState();
-    _navigateNext();
+    _decideNextRoute();
   }
 
-  Future<void> _navigateNext() async {
-    await Future.delayed(const Duration(milliseconds: 2200));
-    if (!mounted) return;
-    context.go(AppRoutes.dashboard);
+  Future<void> _decideNextRoute() async {
+    await Future.delayed(
+        const Duration(milliseconds: 800)); // your splash animation/logo beat
+
+    final hasCompletedOnboarding =
+        await OnboardingPrefs.hasCompletedOnboarding();
+    if (!hasCompletedOnboarding) {
+      if (mounted) context.go(AppRoutes.oneBoarding);
+      return;
+    }
+
+    final isSignedIn = Supabase.instance.client.auth.currentSession != null;
+    if (!isSignedIn) {
+      if (mounted) context.go(AppRoutes.signIn);
+      return;
+    }
+
+    final hasCompletedSetup =
+        ref.read(journeyRepositoryProvider).hasCompletedSetup;
+    if (!hasCompletedSetup) {
+      if (mounted) context.go(AppRoutes.journeySetup);
+      return;
+    }
+
+    if (mounted) context.go(AppRoutes.bottomNavbar);
   }
 
   @override
@@ -75,9 +102,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         ),
         child: Stack(
           children: [
-            // Decorative depth — soft, oversized blurred circles that
-            // sit outside the viewport, giving the flat gradient some
-            // dimensionality without any imagery.
             const Positioned(
               top: -120,
               right: -80,
@@ -88,7 +112,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
               left: -100,
               child: _GlowCircle(size: 320, opacity: 0.05, color: _gold),
             ),
-
             SafeArea(
               child: Center(
                 child: FadeTransition(
@@ -100,8 +123,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Soft glow sitting directly behind the mark
-                          // to lift it off the flat background.
                           Stack(
                             alignment: Alignment.center,
                             children: [
@@ -128,7 +149,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                             ],
                           ),
                           SBC.sH,
-                          // const Gap(18),
                           ShaderMask(
                             shaderCallback: (bounds) => const LinearGradient(
                               colors: [Colors.white, Color(0xFFE7EAE8)],
@@ -155,7 +175,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          // const Gap(),
                           Text(
                             AppString.appSubTitle,
                             style: GoogleFonts.dmSans(
@@ -171,12 +190,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-
-            // Loader anchored near the bottom rather than stacked
-            // directly under the tagline — keeps the hero content
-            // centered and gives the loading state its own breathing
-            // room, which reads calmer / more premium than everything
-            // clustered in the middle.
             Positioned(
               left: 0,
               right: 0,
@@ -222,8 +235,6 @@ class _GlowCircle extends StatelessWidget {
   }
 }
 
-/// Three softly pulsing dots — reads calmer and more deliberate than a
-/// spinning ring, which is what most splash screens default to.
 class _PulsingDotsLoader extends StatefulWidget {
   final Color color;
   const _PulsingDotsLoader({required this.color});

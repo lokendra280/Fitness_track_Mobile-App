@@ -20,7 +20,7 @@ class AuthService {
         return AppAuthState.authenticated(_mapUser(u));
       });
 
-  static Future<AuthResponse?> signIn() async {
+  static Future<AuthResponse?> signInWithGoogle() async {
     try {
       debugPrint('🔵 Google Sign-In: starting authenticate()');
 
@@ -81,6 +81,68 @@ class AuthService {
     }
   }
 
+  static Future<AuthResponse?> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+
+      if (user != null) {
+        debugPrint('Signup successful: ${user.id}');
+      }
+      return response;
+    } on AuthException catch (e) {
+      debugPrint('Signup error: ${e.message}');
+    } catch (e) {
+      debugPrint('Unexpected error: $e');
+    }
+    return null;
+  }
+
+  static Future<AuthResponse?> signUpWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+      final user = response.user;
+      if (user != null) {
+        debugPrint('Signup successful: ${user.id}');
+      }
+      return response;
+    } on AuthException catch (e) {
+      debugPrint('Signup error: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Unexpected error: $e');
+      rethrow;
+    }
+  }
+
+  static Future<AuthResponse> verifySignUpOtp({
+    required String email,
+    required String token,
+  }) {
+    return _supabase.auth.verifyOTP(
+      type: OtpType.signup,
+      token: token,
+      email: email,
+    );
+  }
+
+  static Future<void> resendSignUpOtp({required String email}) {
+    return _supabase.auth.resend(type: OtpType.signup, email: email);
+  }
+
   Future<void> signInWithApple() async =>
       _client.auth.signInWithOAuth(OAuthProvider.apple,
           redirectTo: 'io.supabase.habitflow://login-callback/');
@@ -108,6 +170,8 @@ class AuthService {
       return _mapUser(u);
     }
   }
+
+  /// signUp with Password
 
   Future<void> signOut() => _client.auth.signOut();
 

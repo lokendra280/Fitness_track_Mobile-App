@@ -18,7 +18,7 @@
        <package android:name="com.google.android.apps.healthdata"/>
    </queries>
     <application
-        android:label="HabitFlow"
+        android:label="FitAura"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
 

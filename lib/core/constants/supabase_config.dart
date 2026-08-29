@@ -1,8 +1,8 @@
 class SupabaseConfig {
   // Replace with your Supabase project values
   // Dashboard → Settings → API
-  static const url = 'https://xizhnwyuhpxvvhvljkkh.supabase.co';
-  static const anonKey = 'sb_publishable_6oUQ0Sx_IfVl2c2EzBldsQ_09cp39hC';
+  static const url = 'https://btqysottccofvpgydpka.supabase.co';
+  static const anonKey = 'sb_publishable_xA62nugBe9UoigU081jhEA_P0lNTpww';
 
   // Table names
   static const habits = 'habits';

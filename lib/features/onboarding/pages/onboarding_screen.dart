@@ -25,6 +25,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _next() {
     final isLast = _currentPage == onboardingPages.length - 1;
+    debugPrint(
+        '_next called — currentPage: $_currentPage, isLast: $isLast'); // temporary
     if (isLast) {
       widget.onFinished();
       return;

@@ -21,7 +21,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
   Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final response = await AuthService.signIn();
+      final response = await AuthService.signInWithGoogle();
       if (response == null) {
         state = state.copyWith(isLoading: false);
         return;
@@ -30,6 +30,79 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> verifyOtp(String token) async {
+    final email = state.pendingVerificationEmail;
+    if (email == null) {
+      state = state.copyWith(error: 'No email pending verification.');
+      return;
+    }
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await AuthService.verifySignUpOtp(email: email, token: token);
+      state = state.copyWith(
+        isLoading: false,
+        clearPendingVerificationEmail: true,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> signUp({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await AuthService.signUpWithEmailPassword(
+        email: email,
+        password: password,
+      );
+      if (response == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      // Account created, but not confirmed yet — hand off to the OTP screen
+      // rather than assuming a session exists.
+      state = state.copyWith(
+        isLoading: false,
+        pendingVerificationEmail: email,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await AuthService.signUpWithEmailPassword(
+        email: email,
+        password: password,
+      );
+      if (response == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> resendOtp() async {
+    final email = state.pendingVerificationEmail;
+    if (email == null) return;
+    try {
+      await AuthService.resendSignUpOtp(email: email);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
     }
   }
 

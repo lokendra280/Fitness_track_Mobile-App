@@ -167,7 +167,7 @@ class _HeroHeader extends StatelessWidget {
               ],
             ),
           ),
-          _ConsistencyRing(value: metrics.habitConsistency),
+          //  _ConsistencyRing(value: metrics.habitConsistency),
         ],
       ),
     );

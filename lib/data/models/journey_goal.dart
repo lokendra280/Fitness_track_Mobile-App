@@ -1,9 +1,3 @@
-/// Phase 1 — journey_setup
-///
-/// Written as a plain immutable class (manual copyWith) rather than
-/// `@freezed`, so the project builds without running build_runner.
-/// If/when you add network access, you can swap this for a `@freezed`
-/// class with identical fields and delete this file.
 class JourneyGoal {
   final String type; // e.g. 'lose_weight', 'gain_muscle', 'maintain'
   final double? startingWeight;
@@ -28,7 +22,6 @@ class JourneyGoal {
     return startingWeight! - targetWeight!;
   }
 
-  /// 0.0–1.0. Null until we have enough data to compute it.
   double? get progressPercentage {
     final toLose = weightToLose;
     if (toLose == null ||
@@ -39,6 +32,15 @@ class JourneyGoal {
     }
     final lostSoFar = startingWeight! - currentWeight!;
     return (lostSoFar / toLose).clamp(0.0, 1.0);
+  }
+
+  int? get daysRemaining {
+    if (targetDate == null) return null;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target =
+        DateTime(targetDate!.year, targetDate!.month, targetDate!.day);
+    return target.difference(today).inDays;
   }
 
   bool get isValid =>
@@ -89,6 +91,32 @@ class JourneyGoal {
             : null,
         targetDate: json['targetDate'] != null
             ? DateTime.parse(json['targetDate'] as String)
+            : null,
+      );
+
+  Map<String, dynamic> toSupabaseRow(String userId) => {
+        'user_id': userId,
+        'type': type,
+        'starting_weight': startingWeight,
+        'current_weight': currentWeight,
+        'target_weight': targetWeight,
+        'weight_unit': weightUnit,
+        'start_date': startDate?.toIso8601String(),
+        'target_date': targetDate?.toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+  factory JourneyGoal.fromSupabaseRow(Map<String, dynamic> row) => JourneyGoal(
+        type: row['type'] as String? ?? 'lose_weight',
+        startingWeight: (row['starting_weight'] as num?)?.toDouble(),
+        currentWeight: (row['current_weight'] as num?)?.toDouble(),
+        targetWeight: (row['target_weight'] as num?)?.toDouble(),
+        weightUnit: row['weight_unit'] as String? ?? 'kg',
+        startDate: row['start_date'] != null
+            ? DateTime.parse(row['start_date'] as String)
+            : null,
+        targetDate: row['target_date'] != null
+            ? DateTime.parse(row['target_date'] as String)
             : null,
       );
 }
