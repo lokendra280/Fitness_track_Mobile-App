@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 import 'package:habitflow/features/steps/controller/step_count_controller.dart';
 import 'package:habitflow/features/steps/models/step_counter_summery.dart';
 
@@ -6,10 +7,6 @@ final stepCountControllerProvider = Provider<StepCountController>((ref) {
   return StepCountController.instance;
 });
 
-/// Runs the permission flow once per app session and caches the result.
-/// Every other steps provider below watches this and short-circuits to
-/// zero/empty data if access isn't granted, instead of each one
-/// independently prompting for permission.
 final healthAccessProvider =
     AsyncNotifierProvider<HealthAccessNotifier, HealthAccessStatus>(
   HealthAccessNotifier.new,
@@ -21,7 +18,6 @@ class HealthAccessNotifier extends AsyncNotifier<HealthAccessStatus> {
     return ref.read(stepCountControllerProvider).requestAccess();
   }
 
-  /// Call from a "Grant access" / "Install Health Connect" button.
   Future<void> retry() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -30,12 +26,11 @@ class HealthAccessNotifier extends AsyncNotifier<HealthAccessStatus> {
   }
 }
 
-/// TODO: replace with a real per-user goal from settings/profile once
-/// that exists — hardcoded for now, same default as before.
-final stepGoalProvider = Provider<int>((ref) => 10000);
+final stepGoalProvider = Provider<int>((ref) {
+  final plan = ref.watch(aiPlanControllerProvider);
+  return plan?.stepTarget ?? 10000;
+});
 
-/// Real step count for a single calendar day (normalized to midnight,
-/// so callers don't need to worry about time-of-day components).
 final stepsForDateProvider =
     FutureProvider.autoDispose.family<int, DateTime>((ref, date) async {
   final access = await ref.watch(healthAccessProvider.future);
@@ -54,13 +49,10 @@ final stepsForDateProvider =
   return steps ?? 0;
 });
 
-/// Convenience shortcut for "today" specifically — this is what the
-/// dashboard's Steps row should watch.
 final todayStepsProvider = FutureProvider.autoDispose<int>((ref) {
   return ref.watch(stepsForDateProvider(_todayKey()).future);
 });
 
-/// Real per-day totals for the current week's bar chart.
 final weeklyStepsProvider =
     FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final access = await ref.watch(healthAccessProvider.future);
@@ -79,11 +71,6 @@ final weeklyStepsProvider =
   return controller.fetchWeeklySteps();
 });
 
-/// Full summary for the Step Counter screen — real steps + weekly data,
-/// goal from [stepGoalProvider]. Calories/distance/active-time are still
-/// derived estimates (see TODO) since those need separate HealthDataTypes
-/// (ACTIVE_ENERGY_BURNED, DISTANCE_WALKING_RUNNING) that aren't wired up
-/// yet — swap the formulas below once you add those permissions/queries.
 final stepsSummaryProvider = FutureProvider.autoDispose
     .family<StepsSummary, DateTime>((ref, date) async {
   final steps = await ref.watch(stepsForDateProvider(date).future);

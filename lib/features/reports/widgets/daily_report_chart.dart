@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Animated horizontal bars showing today's tracked metrics against a
-/// goal. Goals are placeholders (TODO) until real per-user goal values
-/// are available from a goals/profile provider.
+
 class DailyReportChart extends StatelessWidget {
   const DailyReportChart({
     super.key,

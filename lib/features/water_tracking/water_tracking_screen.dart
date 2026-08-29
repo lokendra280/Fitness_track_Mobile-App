@@ -6,26 +6,22 @@ import 'package:habitflow/features/water_tracking/providers/water_tracking_provi
 import 'package:habitflow/features/water_tracking/widgets/water_droplets_grid.dart';
 import 'package:habitflow/features/water_tracking/widgets/water_goal_card.dart';
 
-/// Number of glasses that make up the daily goal, and the ml each glass
-/// tap adds. TODO: replace these constants with a persisted user setting
-/// once a "daily goal" provider exists — currently hardcoded to match
-/// the reference design (15 glasses/day).
-const int kDailyGlassGoal = 15;
-const int kMlPerGlass = 250;
-
 class WaterTrackingScreen extends ConsumerWidget {
   const WaterTrackingScreen({super.key, this.userName = ''});
 
-  /// Shown in the "Keep going" message, e.g. "Taigo, you drunk...".
   /// TODO: wire to the real user-profile provider instead of a param.
-final String userName;
+  final String userName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress = ref.watch(waterProgressProvider).clamp(0.0, 1.0);
-    final consumedGlasses = (progress * kDailyGlassGoal).round();
-    final remainingGlasses =
-        (kDailyGlassGoal - consumedGlasses).clamp(0, kDailyGlassGoal);
+    final progress = ref.watch(waterProgressProvider);
+    final targetMl = ref.watch(waterTargetProvider);
+    final glassGoal = ref.watch(waterGlassGoalProvider);
+    final consumedMl = ref.watch(waterControllerProvider);
+
+    final consumedGlasses = (progress * glassGoal).round();
+    final remainingGlasses = (glassGoal - consumedGlasses).clamp(0, glassGoal);
+    final remainingMl = (targetMl - consumedMl).clamp(0, targetMl);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -41,22 +37,28 @@ final String userName;
             Text('Water today', style: AppTypography.body),
             const SizedBox(height: 4),
             Text(
-              '$consumedGlasses of $kDailyGlassGoal glasses',
+              '$consumedMl / $targetMl ml',
               style: AppTypography.displayLarge,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$consumedGlasses of $glassGoal glasses',
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               remainingGlasses > 0
-                  ? '${userName.isNotEmpty ? '$userName, y' : 'Y'}ou drunk '
-                      '$consumedGlasses/$kDailyGlassGoal glasses of water. '
-                      'Keep going only $remainingGlasses glasses left for today'
+                  ? '${userName.isNotEmpty ? '$userName, y' : 'Y'}ou\'ve had '
+                      '$consumedMl of $targetMl ml today. '
+                      'Keep going — $remainingMl ml left to hit your goal.'
                   : '${userName.isNotEmpty ? '$userName, y' : 'Y'}ou hit your '
                       'water goal for today. Nice work!',
               style: AppTypography.bodySmall,
             ),
             const SizedBox(height: 20),
             WaterDropletsGrid(
-              totalGlasses: kDailyGlassGoal,
+              totalGlasses: glassGoal,
               consumedGlasses: consumedGlasses,
               onAddGlass: () => ref
                   .read(waterControllerProvider.notifier)
@@ -65,20 +67,9 @@ final String userName;
             const SizedBox(height: 32),
             Text('Notification', style: AppTypography.h2),
             const SizedBox(height: 12),
-            // WaterNotificationSection(
-            //   onReminderEnabled: () async {
-            //     await ref
-            //         .read(notificationServiceProvider)
-            //         .scheduleWaterReminder();
-            //     if (context.mounted) {
-            //       ScaffoldMessenger.of(context).showSnackBar(
-            //         const SnackBar(content: Text('Water reminders enabled')),
-            //       );
-            //     }
-            //   },
-            // ),
+            // WaterNotificationSection(...) — unchanged, still commented
             const SizedBox(height: 24),
-            WaterGoalCard(dailyGoalGlasses: kDailyGlassGoal),
+            WaterGoalCard(dailyGoalGlasses: glassGoal),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -92,8 +83,11 @@ final String userName;
                   ),
                 ),
                 onPressed: () {
-                  // TODO: open a "change daily goal" flow once that
-                  // settings screen/provider exists.
+                  // TODO: open a "change daily goal" flow. Note: since
+                  // the goal is now plan-derived, this should probably
+                  // open the AiPlan customize sheet (waterTarget field)
+                  // rather than a standalone water-only setting, so the
+                  // two never drift out of sync.
                 },
                 child: Text(
                   'Change daily goal',

@@ -4,53 +4,389 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/core/widgets/animated_common.dart';
+import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/weekly_review/models/perodic_meters.dart';
 import 'providers/review_providers.dart';
 
-class WeeklyReviewScreen extends ConsumerWidget {
-  const WeeklyReviewScreen({super.key});
+enum ReportPeriod { daily, weekly, monthly }
+
+/// Single entry point for all three report views, toggled via segmented
+/// control. Defaults to Daily per the request — daily is the tab shown
+/// on first open, not weekly/monthly.
+class ReportsScreen extends ConsumerStatefulWidget {
+  const ReportsScreen({super.key});
+
+  @override
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  ReportPeriod _period = ReportPeriod.daily;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+
+    return Scaffold(
+      //  backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text('Reports', style: AppTypography.h3),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: _PeriodToggle(
+                value: _period,
+                onChanged: (p) => setState(() => _period = p),
+              ),
+            ),
+            Expanded(
+              child: switch (_period) {
+                ReportPeriod.daily => _DailyReviewBody(day: today),
+                ReportPeriod.weekly => _WeeklyReviewBody(
+                    weekStart: today.subtract(const Duration(days: 7)),
+                  ),
+                ReportPeriod.monthly => _MonthlyReviewBody(
+                    monthStart: today.subtract(const Duration(days: 30)),
+                  ),
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PeriodToggle extends StatelessWidget {
+  final ReportPeriod value;
+  final ValueChanged<ReportPeriod> onChanged;
+  const _PeriodToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: ReportPeriod.values.map((p) {
+          final selected = p == value;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(p),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  switch (p) {
+                    ReportPeriod.daily => 'Daily',
+                    ReportPeriod.weekly => 'Weekly',
+                    ReportPeriod.monthly => 'Monthly',
+                  },
+                  textAlign: TextAlign.center,
+                  style: AppTypography.labelLarge.copyWith(
+                    color: selected ? Colors.black87 : Colors.grey.shade500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Daily
+// ---------------------------------------------------------------------------
+
+class _DailyReviewBody extends ConsumerWidget {
+  final DateTime day;
+  const _DailyReviewBody({required this.day});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final weekStart = DateTime.now().subtract(const Duration(days: 7));
-    final metrics = ref.watch(weeklyMetricsProvider(weekStart));
+    final headlineAsync = ref.watch(dailyHeadlineMetricsProvider(day));
+    final trendAsync = ref.watch(dailyMetricsProvider(day));
+    final review = ref.watch(dailyReviewProvider(day));
+
+    if (headlineAsync.isLoading || trendAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (headlineAsync.hasError || trendAsync.hasError) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            "Couldn't load today's activity data.",
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyLarge,
+          ),
+        ),
+      );
+    }
+    final headline = headlineAsync.value!;
+    final trendMetrics = trendAsync.value!;
+
+    final sections = <Widget>[
+      _DailyHeroHeader(headline: headline),
+      const SizedBox(height: 20),
+      _DailyStatGrid(
+        headline: headline,
+      ),
+      const SizedBox(height: 28),
+      Text('Last 7 days', style: AppTypography.h2),
+      const SizedBox(height: 12),
+      _TrendChartCard(
+        title: 'Steps',
+        values: trendMetrics.stepsPerDay,
+        color: AppColors.goalStepsColor,
+        unit: 'steps',
+      ),
+      const SizedBox(height: 16),
+      _TrendChartCard(
+        title: 'Water',
+        values: trendMetrics.waterPerDay,
+        color: AppColors.goalCardioColor,
+        unit: 'ml',
+      ),
+      const SizedBox(height: 16),
+      _TrendChartCard(
+        title: 'Sleep',
+        values: trendMetrics.sleepPerDay,
+        color: AppColors.goalStrengthColor,
+        unit: 'h',
+      ),
+      const SizedBox(height: 28),
+      _AiAnalysisCard(review: review),
+      const SizedBox(height: 24),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      children: [
+        for (var i = 0; i < sections.length; i++)
+          StaggerFadeIn(index: i, child: sections[i]),
+      ],
+    );
+  }
+}
+
+class _DailyHeroHeader extends StatelessWidget {
+  final DailyHeadline headline;
+  const _DailyHeroHeader({required this.headline});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.goalStepsColor,
+            AppColors.goalStepsColor.withValues(alpha: 0.75),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'TODAY',
+            style: AppTypography.labelSmall.copyWith(
+              color: Colors.white.withValues(alpha: 0.85),
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: headline.steps.toDouble()),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) => Text(
+              '${value.round()}',
+              style: AppTypography.displayLarge.copyWith(color: Colors.white),
+            ),
+          ),
+          Text(
+            'of ${headline.stepGoal} steps goal',
+            style: AppTypography.bodySmall.copyWith(
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: headline.stepProgress),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) => ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: 0.22),
+                valueColor: const AlwaysStoppedAnimation(Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DailyStatGrid extends StatelessWidget {
+  final DailyHeadline headline;
+  const _DailyStatGrid({required this.headline});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _StatItem(
+        icon: Icons.water_drop_rounded,
+        color: AppColors.goalCardioColor,
+        label: 'Water',
+        value: '${headline.water}',
+        unit: 'ml',
+      ),
+      _StatItem(
+        icon: Icons.bedtime_rounded,
+        color: AppColors.goalStrengthColor,
+        label: 'Sleep',
+        value: headline.sleepHours.toStringAsFixed(1),
+        unit: 'h',
+      ),
+      _StatItem(
+        icon: Icons.fitness_center_rounded,
+        color: AppColors.goalStepsColor,
+        label: 'Workouts',
+        value: '${headline.workoutCount}',
+        unit: '',
+      ),
+      _StatItem(
+        icon: Icons.directions_walk_rounded,
+        color: AppColors.goalCardioColor,
+        label: 'Steps',
+        value: '${headline.steps}',
+        unit: '',
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.9,
+      children: items,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Weekly
+// ---------------------------------------------------------------------------
+
+class _WeeklyReviewBody extends ConsumerWidget {
+  final DateTime weekStart;
+  const _WeeklyReviewBody({required this.weekStart});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final metricsAsync = ref.watch(weeklyMetricsProvider(weekStart));
     final review = ref.watch(weeklyReviewProvider(weekStart));
-    return _ReviewScaffold(
-      title: 'Weekly review',
-      periodLabel: 'This week',
-      metrics: metrics,
-      review: review,
-      showSleepTrend: true,
+
+    return metricsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            "Couldn't load this week's data.",
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyLarge,
+          ),
+        ),
+      ),
+      data: (metrics) => _PeriodicReviewBody(
+        periodLabel: 'This week',
+        metrics: metrics,
+        review: review,
+        showSleepTrend: true,
+      ),
     );
   }
 }
+// ---------------------------------------------------------------------------
+// Monthly
+// ---------------------------------------------------------------------------
 
-class MonthlyReviewScreen extends ConsumerWidget {
-  const MonthlyReviewScreen({super.key});
+class _MonthlyReviewBody extends ConsumerWidget {
+  final DateTime monthStart;
+  const _MonthlyReviewBody({required this.monthStart});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final monthStart = DateTime.now().subtract(const Duration(days: 30));
-    final metrics = ref.watch(monthlyMetricsProvider(monthStart));
+    final metricsAsync = ref.watch(monthlyMetricsProvider(monthStart));
     final review = ref.watch(monthlyReviewProvider(monthStart));
-    return _ReviewScaffold(
-      title: 'Monthly review',
-      periodLabel: 'Last 30 days',
-      metrics: metrics,
-      review: review,
-      showSleepTrend: false,
+
+    return metricsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            "Couldn't load this month's data.",
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyLarge,
+          ),
+        ),
+      ),
+      data: (metrics) => _PeriodicReviewBody(
+        periodLabel: 'Last 30 days',
+        metrics: metrics,
+        review: review,
+        showSleepTrend: false,
+      ),
     );
   }
 }
 
-class _ReviewScaffold extends StatelessWidget {
-  const _ReviewScaffold({
-    required this.title,
+class _PeriodicReviewBody extends StatelessWidget {
+  const _PeriodicReviewBody({
     required this.periodLabel,
     required this.metrics,
     required this.review,
     required this.showSleepTrend,
   });
 
-  final String title;
   final String periodLabel;
   final PeriodMetrics metrics;
   final AsyncValue<String> review;
@@ -92,22 +428,12 @@ class _ReviewScaffold extends StatelessWidget {
       const SizedBox(height: 24),
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(title, style: AppTypography.h3),
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-          children: [
-            for (var i = 0; i < sections.length; i++)
-              StaggerFadeIn(index: i, child: sections[i]),
-          ],
-        ),
-      ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      children: [
+        for (var i = 0; i < sections.length; i++)
+          StaggerFadeIn(index: i, child: sections[i]),
+      ],
     );
   }
 }
@@ -167,63 +493,12 @@ class _HeroHeader extends StatelessWidget {
               ],
             ),
           ),
-          //  _ConsistencyRing(value: metrics.habitConsistency),
         ],
       ),
     );
   }
 }
 
-class _ConsistencyRing extends StatelessWidget {
-  const _ConsistencyRing({required this.value});
-
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 76,
-      height: 76,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeOutCubic,
-            builder: (context, t, _) => CircularProgressIndicator(
-              value: t,
-              strokeWidth: 6,
-              strokeCap: StrokeCap.round,
-              backgroundColor: Colors.white.withValues(alpha: 0.25),
-              valueColor: const AlwaysStoppedAnimation(Colors.white),
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${(value * 100).round()}%',
-                style: AppTypography.labelLarge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                'habits',
-                style: AppTypography.caption.copyWith(color: Colors.white70),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 2x2 animated stat grid. childAspectRatio widened (2.0 -> shorter cards
-/// need more height, not less) and card padding trimmed to fix the
-/// RenderFlex overflow the tighter 2.4 ratio was causing.
 class _StatGrid extends StatelessWidget {
   const _StatGrid({required this.metrics});
 
@@ -268,7 +543,7 @@ class _StatGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.9, // was 2.4 — too short for content, caused overflow
+      childAspectRatio: 1.9,
       children: items,
     );
   }
@@ -330,9 +605,6 @@ class _StatItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 1),
-                // FittedBox guards against overflow permanently — even if
-                // a future value/unit combo is longer than expected, it
-                // scales down instead of breaking layout.
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,

@@ -259,7 +259,7 @@ class _PlanReview extends ConsumerWidget {
                 icon: Icons.fitness_center_rounded,
                 color: Colors.deepOrange,
                 label: 'Exercise',
-                value: plan.exerciseFrequency.replaceAll('_', ' '),
+                value: '${plan.workoutDaysPerWeek}x / week',
               ),
               _PlanTile(
                 icon: Icons.bedtime_rounded,

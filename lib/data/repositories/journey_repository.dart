@@ -41,6 +41,23 @@ class JourneyRepository {
     await box.put(_kJourneyGoalKey, goal.toJson());
     await _syncProfileToRemote();
   }
+
+  /// for daily basic exercise
+  Set<String> completedExercisesFor(DateTime day) {
+    final raw = box.get(_dk('exercises_done', day)) as List?;
+    if (raw == null) return {};
+    return raw.cast<String>().toSet();
+  }
+
+  Future<void> toggleExerciseDone(DateTime day, String exerciseName) async {
+    final current = completedExercisesFor(day);
+    if (current.contains(exerciseName)) {
+      current.remove(exerciseName);
+    } else {
+      current.add(exerciseName);
+    }
+    await box.put(_dk('exercises_done', day), current.toList());
+  }
   // --- Phase 1: personal profile ---
 
   PersonalProfile loadProfile() {

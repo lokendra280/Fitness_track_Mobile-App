@@ -42,7 +42,7 @@ class _RootScaffoldState extends State<RootScaffold> {
         index: _index,
         children: const [
           DashboardScreen(),
-          WeeklyReviewScreen(),
+          ReportsScreen(),
           ProfileScreen(),
         ],
       ),

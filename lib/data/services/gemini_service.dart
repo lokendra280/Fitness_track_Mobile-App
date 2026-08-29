@@ -170,9 +170,14 @@ User profile:
 - food allergies: ${profile.foodAllergies.join(', ')}
 - food restrictions: ${profile.foodRestrictions.join(', ')}
 
-Choose 4-6 specific exercises matching the guidance above and the user's
-"${profile.fitnessLevel}" fitness level. Assume bodyweight/basic gym
-equipment unless told otherwise. Give each a concrete sets/reps or duration.
+Build a full 7-day exercise schedule (Monday through Sunday) matching the
+guidance above and the user's "${profile.fitnessLevel}" fitness level.
+Assume bodyweight/basic gym equipment unless told otherwise. Include 2-4
+rest days spread across the week (not all consecutive) appropriate for
+their fitness level — beginners need more rest days than advanced users.
+On non-rest days, give a short "focus" label (e.g. "Upper body strength",
+"Cardio", "Full body", "Legs & core") and list 3-5 specific exercises with
+concrete sets/reps or duration for that day.
 
 For recommendedHabits, keep it simple and directly tied to the three
 numbers above plus consistency — always include exactly these four, in
@@ -185,16 +190,24 @@ this order, filling in the target numbers:
    rest-day reminder) — do not repeat the three above.
 
 Respond with ONLY a JSON object matching exactly this shape (no markdown
-fences, no commentary):
+fences, no commentary). weeklySchedule MUST have exactly 7 entries, one
+per day, in order Monday through Sunday:
 {
   "calorieTarget": $calorieTarget,
   "waterTarget": $waterTarget,
   "stepTarget": $stepTarget,
   "goalDirection": "$direction",
-  "exercises": [
-    {"name": "<exercise name>", "sets": "<e.g. '3 sets x 12 reps' or '20 min'>", "category": "strength" | "cardio" | "mobility"}
+  "weeklySchedule": [
+    {
+      "day": "Monday",
+      "isRestDay": false,
+      "focus": "<e.g. 'Upper body strength'>",
+      "exercises": [
+        {"name": "<exercise name>", "sets": "<e.g. '3 sets x 12 reps' or '20 min'>", "category": "strength" | "cardio" | "mobility"}
+      ]
+    },
+    {"day": "Tuesday", "isRestDay": true, "focus": null, "exercises": []}
   ],
-  "exerciseFrequency": "<e.g. '3x_week'>",
   "sleepTarget": "<e.g. '7-9_hours'>",
   "mealTracking": true,
   "recommendedHabits": [

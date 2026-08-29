@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
+import 'package:habitflow/features/ai_plan/screens/daily_exercise_card.dart';
 import 'package:habitflow/features/auth/ui/sign_in_screen.dart';
 import 'package:habitflow/features/auth/ui/sign_up_screen.dart';
 import 'package:habitflow/features/auth/ui/verify_otp_screen.dart';
@@ -55,7 +56,7 @@ abstract class AppRoutes {
   static const aiReview = '/ai-review';
   static const aiCoach = '/ai-coach';
   static const weeklyReview = '/weekly-review';
-  static const monthlyReview = '/monthly-review';
+  static const dailyWorkout = '/daily-workout';
   static const milestones = '/milestones';
   static const reports = '/reports';
   static const journeyCompletion = '/journey-completion';
@@ -156,11 +157,11 @@ List<RouteBase> buildAppRoutes() {
     ),
     GoRoute(
       path: AppRoutes.weeklyReview,
-      builder: (_, __) => const WeeklyReviewScreen(),
+      builder: (_, __) => const ReportsScreen(),
     ),
     GoRoute(
-      path: AppRoutes.monthlyReview,
-      builder: (_, __) => const MonthlyReviewScreen(),
+      path: AppRoutes.dailyWorkout,
+      builder: (_, __) => const DailyExerciseCard(),
     ),
     GoRoute(
       path: AppRoutes.milestones,

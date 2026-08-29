@@ -55,7 +55,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
   Future<void> _decideNextRoute() async {
     await Future.delayed(
-        const Duration(milliseconds: 800)); // your splash animation/logo beat
+        const Duration(milliseconds: 2200)); // your splash animation/logo beat
 
     final hasCompletedOnboarding =
         await OnboardingPrefs.hasCompletedOnboarding();

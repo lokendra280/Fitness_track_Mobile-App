@@ -16,7 +16,6 @@ import 'package:habitflow/features/dashboard/screens/widgets/weekly_goals_row.da
 import 'package:habitflow/features/steps/ui/step_count_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/animated_common.dart';
-import '../../../core/widgets/section_header.dart';
 import '../../../data/models/dashboard_data.dart';
 import '../../../data/models/dashboard_ui_models.dart';
 import '../providers/dashboard_providers.dart';
@@ -89,11 +88,11 @@ class DashboardScreen extends ConsumerWidget {
       SBC.lHM,
 
       PersonalWorkoutCard(
-        title: "Habits",
+        title: "WorkOut",
         completedCount: 2,
         totalCount: 10,
         onTap: () {
-          context.push('/habits');
+          context.push('/daily-workout');
         },
         // backgroundImage: Image.asset(name),
       ),
