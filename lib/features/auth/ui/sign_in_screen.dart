@@ -10,6 +10,7 @@ import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/core/router/app_router.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/core/widgets/app_textfield.dart';
+import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/auth/entities/auth_state.dart';
 import 'package:habitflow/features/auth/providers/auth_provider.dart';
 
@@ -54,15 +55,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         ref.read(authStateProvider.notifier).clearError();
       }
 
-      // Fires for both Google and email/password sign-in — either path
-      // lands the user in `authenticated` state via the auth stream once
-      // Supabase confirms the session. journeySetup is a safe unconditional
-      // target: if setup's already done, the router's own redirect gate
-      // bounces straight through to the dashboard anyway.
       final justSignedIn =
           previous?.isAuthenticated != true && next.isAuthenticated;
       if (justSignedIn) {
-        context.go(AppRoutes.journeySetup);
+        final hasCompletedSetup =
+            ref.read(journeyRepositoryProvider).hasCompletedSetup;
+        context.go(
+          hasCompletedSetup ? AppRoutes.bottomNavbar : AppRoutes.journeySetup,
+        );
       }
     });
 
@@ -104,29 +104,30 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                         ),
                       ),
                       SBC.xxLH,
-                      AppTextField(
-                        label: AppString.email,
-                        controller: emailController,
-                      ),
-                      SBC.xLH,
-                      AppTextField(
-                        label: AppString.email,
-                        controller: passwordController,
-                      ),
-                      SBC.xxLH,
-                      _SocialBtn(
-                        label: AppString.signIn,
-                        emoji: "",
-                        isLoading: auth.isLoading,
-                        onTap: auth.isLoading
-                            ? null
-                            : () => ref
-                                .read(authStateProvider.notifier)
-                                .signInWithEmailPassword(
-                                  email: emailController.text,
-                                  password: passwordController.text,
-                                ),
-                      ),
+                      // AppTextField(
+                      //   label: AppString.email,
+                      //   controller: emailController,
+                      // ),
+                      // SBC.xLH,
+                      // AppTextField(
+                      //   label: AppString.email,
+                      //   controller: passwordController,
+                      // ),
+                      // SBC.xxLH,
+                      // _SocialBtn(
+                      //   label: AppString.signIn,
+                      //   emoji: "",
+                      //   isLoading: auth.isLoading,
+                      //   onTap: auth.isLoading
+                      //       ? null
+                      //       : () => ref
+                      //           .read(authStateProvider.notifier)
+                      //           .signInWithEmailPassword(
+                      //             email: emailController.text,
+                      //             password: passwordController.text,
+                      //           ),
+                      // ),
+
                       SBC.xxLH,
                       _SocialBtn(
                         label: AppString.continueGoogle,
@@ -163,7 +164,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                           ),
                           GestureDetector(
                             onTap: () {
-                              context.push(AppRoutes.signUp);
+                              // context.push(AppRoutes.signUp);
                             },
                             child: Text(
                               'Sign Up',

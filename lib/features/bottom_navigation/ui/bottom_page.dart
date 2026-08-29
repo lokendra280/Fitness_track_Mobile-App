@@ -43,7 +43,7 @@ class _RootScaffoldState extends State<RootScaffold> {
         children: const [
           DashboardScreen(),
           ReportsScreen(),
-          ProfileScreen(),
+          // ProfileScreen(),
         ],
       ),
       bottomNavigationBar: AdaptiveBottomNavBar(

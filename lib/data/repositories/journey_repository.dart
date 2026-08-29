@@ -145,6 +145,30 @@ class JourneyRepository {
     return diff < 0 ? 0 : diff;
   }
 
+  Future<bool> hydrateFromRemoteIfNeeded() async {
+    if (hasCompletedSetup) return false;
+
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return false;
+
+    try {
+      final remote =
+          await JourneyRemoteRepository().fetchProfile(userId: userId);
+      if (remote == null) return false;
+      if (!remote.goal.isValid || !remote.profile.isComplete) return false;
+
+      await box.put(_kJourneyGoalKey, remote.goal.toJson());
+      await box.put(_kPersonalProfileKey, remote.profile.toJson());
+      if (remote.aiPlan != null) {
+        await box.put(_kAiPlanKey, remote.aiPlan!.toJson());
+      }
+
+      return true; // hydration succeeded
+    } catch (_) {
+      return false; // offline or remote error — fall through to onboarding
+    }
+  }
+
   // --- Phase 4: food ---
   List<FoodEntry> foodEntriesFor(DateTime day) =>
       ((box.get(_dk('food', day)) as List?) ?? [])

@@ -54,8 +54,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   }
 
   Future<void> _decideNextRoute() async {
-    await Future.delayed(
-        const Duration(milliseconds: 2200)); // your splash animation/logo beat
+    await Future.delayed(const Duration(milliseconds: 2200));
 
     final hasCompletedOnboarding =
         await OnboardingPrefs.hasCompletedOnboarding();
@@ -70,8 +69,14 @@ class _SplashPageState extends ConsumerState<SplashPage>
       return;
     }
 
-    final hasCompletedSetup =
-        ref.read(journeyRepositoryProvider).hasCompletedSetup;
+    final repo = ref.read(journeyRepositoryProvider);
+    if (!repo.hasCompletedSetup) {
+      // Local is empty/incomplete — try pulling from Supabase before
+      // assuming this is a genuinely new user. Covers reinstalls.
+      await repo.hydrateFromRemoteIfNeeded();
+    }
+
+    final hasCompletedSetup = repo.hasCompletedSetup;
     if (!hasCompletedSetup) {
       if (mounted) context.go(AppRoutes.journeySetup);
       return;
@@ -79,6 +84,32 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     if (mounted) context.go(AppRoutes.bottomNavbar);
   }
+  // Future<void> _decideNextRoute() async {
+  //   await Future.delayed(
+  //       const Duration(milliseconds: 2200)); // your splash animation/logo beat
+
+  //   final hasCompletedOnboarding =
+  //       await OnboardingPrefs.hasCompletedOnboarding();
+  //   if (!hasCompletedOnboarding) {
+  //     if (mounted) context.go(AppRoutes.oneBoarding);
+  //     return;
+  //   }
+
+  //   final isSignedIn = Supabase.instance.client.auth.currentSession != null;
+  //   if (!isSignedIn) {
+  //     if (mounted) context.go(AppRoutes.signIn);
+  //     return;
+  //   }
+
+  //   final hasCompletedSetup =
+  //       ref.read(journeyRepositoryProvider).hasCompletedSetup;
+  //   if (!hasCompletedSetup) {
+  //     if (mounted) context.go(AppRoutes.journeySetup);
+  //     return;
+  //   }
+
+  //   if (mounted) context.go(AppRoutes.bottomNavbar);
+  // }
 
   @override
   void dispose() {

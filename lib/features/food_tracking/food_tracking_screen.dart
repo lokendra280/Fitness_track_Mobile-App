@@ -2,25 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/features/food_tracking/providers/food_tracking_provider.dart';
 import 'package:habitflow/features/food_tracking/widgets/food_scan_result.dart';
 import 'package:habitflow/data/models/tracking_models.dart';
 import 'package:image_picker/image_picker.dart';
 import 'widgets/add_food_sheet.dart';
 
-/// Redesigned to match the reference mock: week-strip + streak badge,
-/// a calorie progress card, a macros row, and a Diary grouped by meal.
-///
-/// ASSUMPTIONS (flagged since the underlying providers weren't shown):
-/// 1. Daily calorie target comes from the accepted AiPlan
-///    (aiPlanControllerProvider). Falls back to 2000 if no plan exists.
-/// 2. Macro targets aren't in AiPlan today, so they're derived with a
-///    standard 40% carbs / 30% protein / 30% fat split of the calorie
-///    target — replace with real per-macro targets once/if AiPlan
-///    exposes them.
-/// 3. Weekly streak badge (top-right "3 ⚡") is a placeholder constant
-///    — wiring it to "consecutive days logged" needs a
-///    multi-day-aware provider, which isn't in what's been shared yet.
 class FoodTrackingScreen extends ConsumerWidget {
   const FoodTrackingScreen({super.key});
 
@@ -58,14 +46,15 @@ class FoodTrackingScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: scheme.surfaceContainerLowest,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               sliver: SliverToBoxAdapter(
-                child: _TodayHeader(date: day, streakCount: 3),
+                child: _TodayHeader(
+                  date: day,
+                ),
               ),
             ),
             SliverPadding(
@@ -171,8 +160,9 @@ class FoodTrackingScreen extends ConsumerWidget {
 
 class _TodayHeader extends StatelessWidget {
   final DateTime date;
-  final int streakCount;
-  const _TodayHeader({required this.date, required this.streakCount});
+  const _TodayHeader({
+    required this.date,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -182,16 +172,7 @@ class _TodayHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('Today', style: text.headlineMedium),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded),
-          ],
-        ),
-        Row(
-          children: [
-            Text('$streakCount', style: text.titleMedium),
-            const SizedBox(width: 4),
-            const Icon(Icons.bolt_rounded, color: Colors.amber),
+            Text(AppString.caloriesTracking, style: text.headlineMedium),
           ],
         ),
       ],

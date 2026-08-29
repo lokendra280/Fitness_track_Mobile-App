@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:habitflow/data/repositories/journey_repository_provider.dart';
-import 'package:habitflow/features/ai_plan/screens/daily_exercise_card.dart';
+import 'package:habitflow/features/personal_profile/screens/widgets/edit_profile_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:habitflow/features/auth/ui/sign_in_screen.dart';
 import 'package:habitflow/features/auth/ui/sign_up_screen.dart';
 import 'package:habitflow/features/auth/ui/verify_otp_screen.dart';
@@ -33,7 +34,7 @@ import 'package:habitflow/features/weekly_review/review_screens.dart';
 import 'package:habitflow/features/milestones/milestones_screen.dart';
 import 'package:habitflow/features/reports/journey_completion_screen.dart';
 import 'package:habitflow/core/privacy/consent_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 
 /// Route path constants — reference these instead of hardcoded strings
 /// (context.push('/food') etc.) wherever possible, so a typo'd path
@@ -43,6 +44,8 @@ abstract class AppRoutes {
 
   static const journeySetup = '/journey-setup';
   static const personalProfile = '/personal-profile';
+  static const profile = '/profile';
+  static const editProfile = '/edit-profile';
   static const aiPlan = '/ai-plan';
   static const splash = '/splash';
   static const dashboard = '/dashboard';
@@ -56,7 +59,7 @@ abstract class AppRoutes {
   static const aiReview = '/ai-review';
   static const aiCoach = '/ai-coach';
   static const weeklyReview = '/weekly-review';
-  static const dailyWorkout = '/daily-workout';
+  static const monthlyReview = '/monthly-review';
   static const milestones = '/milestones';
   static const reports = '/reports';
   static const journeyCompletion = '/journey-completion';
@@ -64,10 +67,29 @@ abstract class AppRoutes {
   static const barcode = '/barcode';
   static const privacy = '/privacy';
   static const bottomNavbar = '/botoomNav';
-  static const signIn = '/sign-In';
+  static const signIn = '/sign-in';
   static const signUp = '/sign-up';
+  static const verifyOtp = '/verify-otp';
   static const oneBoarding = '/onBoarding';
-  static const verifyOtp = '/verify-opt';
+}
+
+/// Bridges a Stream (Supabase's auth state changes) into a Listenable so
+/// GoRouter's `refreshListenable` re-runs `redirect` the moment auth state
+/// changes — without this, signing in wouldn't trigger a re-check until the
+/// next manual navigation.
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
 }
 
 List<RouteBase> buildAppRoutes() {
@@ -87,13 +109,13 @@ List<RouteBase> buildAppRoutes() {
       path: AppRoutes.signIn,
       builder: (_, __) => const SignInScreen(),
     ),
+    // GoRoute(
+    //   path: AppRoutes.signUp,
+    //   builder: (_, __) => const SignUpScreen(),
+    // ),
     GoRoute(
       path: AppRoutes.verifyOtp,
       builder: (_, __) => const VerifyOtpScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.signUp,
-      builder: (_, __) => const SignUpScreen(),
     ),
     GoRoute(
       path: AppRoutes.journeySetup,
@@ -105,7 +127,15 @@ List<RouteBase> buildAppRoutes() {
     ),
     GoRoute(
       path: AppRoutes.personalProfile,
-      builder: (_, __) => const ProfileScreen(),
+      builder: (_, __) => const PersonalProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.profile,
+      builder: (_, __) => const PersonalProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.editProfile,
+      builder: (_, __) => const EditProfileScreen(),
     ),
     GoRoute(
       path: AppRoutes.aiPlan,
@@ -155,14 +185,14 @@ List<RouteBase> buildAppRoutes() {
       path: AppRoutes.aiCoach,
       builder: (_, __) => const AiCoachScreen(),
     ),
-    GoRoute(
-      path: AppRoutes.weeklyReview,
-      builder: (_, __) => const ReportsScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.dailyWorkout,
-      builder: (_, __) => const DailyExerciseCard(),
-    ),
+    // GoRoute(
+    //   path: AppRoutes.weeklyReview,
+    //   builder: (_, __) => const WeeklyReviewScreen(),
+    // ),
+    // GoRoute(
+    //   path: AppRoutes.monthlyReview,
+    //   builder: (_, __) => const MonthlyReviewScreen(),
+    // ),
     GoRoute(
       path: AppRoutes.milestones,
       builder: (_, __) => const MilestonesScreen(),
@@ -203,11 +233,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
       final isOnSplash = location == AppRoutes.splash;
 
+      // Splash owns its own navigation decision (with a brief visible
+      // delay) — don't fight it here, or it'll never actually be seen.
       if (isOnSplash) return null;
 
       final hasCompletedOnboarding =
           await OnboardingPrefs.hasCompletedOnboarding();
       final isSignedIn = Supabase.instance.client.auth.currentSession != null;
+
+      if (isSignedIn) {
+        // Cheap no-op after the first successful hydration per session —
+        // hasCompletedSetup/hasGeneratedPlan short-circuit inside it.
+        final userId = Supabase.instance.client.auth.currentUser!.id;
+        await journeyRepository.hydrateFromRemoteIfNeeded();
+      }
 
       final hasCompletedSetup = journeyRepository.hasCompletedSetup;
       final hasGeneratedPlan = journeyRepository.hasGeneratedPlan;
@@ -231,19 +270,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return isOnOnboarding ? null : AppRoutes.oneBoarding;
       }
 
-      // Gate 2: must be signed in.
+      // Gate 2: must be signed in. Sign-up and OTP verification are allowed
+      // through un-authenticated, since that's the whole point of them.
       if (!isSignedIn) {
         return (isOnSignIn || isOnSignUp || isOnVerifyOtp)
             ? null
             : AppRoutes.signIn;
       }
 
-      // Gate 3: must have completed journey setup. Allow the whole
-      // setup flow through, not just the entry screen — otherwise
-      // step 2/3 immediately bounce back to step 1 on every push.
+      // Gate 3a: profile/goal setup not done yet — send to journey setup,
+      // but a returning user who already finished this shouldn't be sent
+      // back through it (that's Gate 3b below).
       if (!hasCompletedSetup) {
         return isOnPersonalProfileOrEarlier ? null : AppRoutes.journeySetup;
       }
+
+      // Gate 3b: profile is done, but no AI plan exists yet — send straight
+      // to plan generation, skipping profile creation entirely since it's
+      // already saved. This stops an incomplete user (profile done, plan
+      // not generated) from ever reaching the dashboard with no plan.
       if (!hasGeneratedPlan) {
         return location == AppRoutes.aiPlan ? null : AppRoutes.aiPlan;
       }
@@ -268,18 +313,3 @@ final initialLocationProvider = Provider<String>((ref) {
     'initialLocationProvider must be overridden in main.dart',
   );
 });
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
-    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
-  }
-
-  late final StreamSubscription<dynamic> _subscription;
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
-  }
-}
