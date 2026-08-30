@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/features/bottom_navigation/widgets/bottom_navigation.dart';
+import 'package:habitflow/features/bottom_navigation/widgets/reward_gate_sheet.dart';
 import 'package:habitflow/features/dashboard/screens/dashboard_screen.dart';
-import 'package:habitflow/features/journey_setup/screens/journey_about_section.dart';
-import 'package:habitflow/features/personal_profile/screens/personal_profile_screen.dart';
 import 'package:habitflow/features/personal_profile/screens/profile_screen.dart';
 import 'package:habitflow/features/weekly_review/report_screens.dart';
 
@@ -17,6 +16,10 @@ class RootScaffold extends StatefulWidget {
 
 class _RootScaffoldState extends State<RootScaffold> {
   int _index = 0;
+
+  static const int _reportsTabIndex = 1;
+
+  bool _reportsUnlocked = false;
 
   static final _items = [
     const AdaptiveNavItem(
@@ -36,6 +39,15 @@ class _RootScaffoldState extends State<RootScaffold> {
     ),
   ];
 
+  Future<void> _handleTap(int i) async {
+    if (i == _reportsTabIndex && !_reportsUnlocked) {
+      final unlocked = await showReportUnlockSheet(context);
+      if (!unlocked) return;
+      setState(() => _reportsUnlocked = true);
+    }
+    setState(() => _index = i);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,7 +62,7 @@ class _RootScaffoldState extends State<RootScaffold> {
       bottomNavigationBar: AdaptiveBottomNavBar(
         items: _items,
         currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+        onTap: _handleTap,
       ),
     );
   }
