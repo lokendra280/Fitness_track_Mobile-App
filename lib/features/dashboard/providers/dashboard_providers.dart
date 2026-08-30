@@ -17,6 +17,7 @@ final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
 
 /// Selected day in the "Today" week strip.
 final selectedDayIndexProvider = StateProvider<int>((ref) => 0);
+final double _fallbackCalorieTarget = 2000;
 
 /// --- Real data providers ---------------------------------------------------
 
@@ -33,8 +34,10 @@ final dashboardDataProvider = Provider<DashboardData>((ref) {
       : null;
 
   final today = DateTime.now();
+
   final calorieTarget =
-      2000; // no explicit calorie target field yet — reasonable default
+      (plan?.calorieTarget ?? _fallbackCalorieTarget).toDouble();
+
   final caloriesToday = ref
       .watch(foodLogProvider(today))
       .fold<double>(0, (s, e) => s + e.calories);
@@ -67,6 +70,7 @@ final aiInsightProvider = FutureProvider.autoDispose<String>((ref) async {
     'habitConsistency': data.habitConsistency,
     'waterProgress': data.waterProgress,
     'stepsProgress': data.stepsProgress,
+    
   });
 });
 

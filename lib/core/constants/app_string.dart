@@ -20,5 +20,5 @@ class AppString {
   static const verify = "Verify";
   static const resendCode = "Resend code";
   static const otpHint = "Enter 6-digit code";
-  static const caloriesTracking = "Calories Tracking";
+  static const caloriesTracking = "Daily Calories Tracking";
 }

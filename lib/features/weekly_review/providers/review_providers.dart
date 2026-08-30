@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 import 'package:habitflow/features/steps/ui/step_count_provider.dart';
+import 'package:habitflow/features/weekly_review/models/daily_headline.dart';
 import 'package:habitflow/features/weekly_review/models/perodic_meters.dart';
 
 /// Steps now come from the real step-counter pipeline (health data),
@@ -13,7 +14,7 @@ Future<PeriodMetrics> _computeMetrics(
   DateTime start,
   int days,
 ) async {
-  final water = <double>[], sleep = <double>[];
+  final water = <double>[], sleep = <double>[], calories = <double>[];
   int workouts = 0;
 
   final stepsFutures = <Future<int>>[];
@@ -23,6 +24,13 @@ Future<PeriodMetrics> _computeMetrics(
     water.add((repo.waterFor(day) as int).toDouble());
     sleep.add((repo.sleepFor(day)?.hours as double?) ?? 0);
     workouts += (repo.workoutsFor(day) as List).length;
+
+    final foodEntries = repo.foodEntriesFor(day) as List;
+    final dayCalories = foodEntries.fold<double>(
+      0,
+      (sum, e) => sum + ((e.calories as double?) ?? 0),
+    );
+    calories.add(dayCalories);
   }
 
   final stepsInt = await Future.wait(stepsFutures);
@@ -37,6 +45,7 @@ Future<PeriodMetrics> _computeMetrics(
     stepsPerDay: steps,
     waterPerDay: water,
     sleepPerDay: sleep,
+    caloriesPerDay: calories,
     workoutCount: workouts,
     habitConsistency: consistency,
   );
@@ -62,25 +71,9 @@ final monthlyMetricsProvider = FutureProvider.autoDispose
   return _computeMetrics(ref, repo, monthStart, 30);
 });
 
-/// Today's actual figures for the hero header — now includes the step
-/// goal + progress so the UI can show "X / goal" instead of a bare number.
-class DailyHeadline {
-  final int steps;
-  final int stepGoal;
-  final double stepProgress; // 0.0–1.0
-  final int water;
-  final double sleepHours;
-  final int workoutCount;
-
-  const DailyHeadline({
-    required this.steps,
-    required this.stepGoal,
-    required this.stepProgress,
-    required this.water,
-    required this.sleepHours,
-    required this.workoutCount,
-  });
-}
+/// Today's actual figures for the hero header — includes step goal +
+/// progress, and calorie target + progress, so the UI can show "X / goal"
+/// for both instead of bare numbers.
 
 final dailyHeadlineMetricsProvider = FutureProvider.autoDispose
     .family<DailyHeadline, DateTime>((ref, day) async {
@@ -88,10 +81,23 @@ final dailyHeadlineMetricsProvider = FutureProvider.autoDispose
   final steps = await ref.watch(stepsForDateProvider(day).future);
   final stepGoal = ref.watch(stepGoalProvider);
 
+  final plan = ref.watch(aiPlanControllerProvider);
+  final calorieTarget = plan?.calorieTarget ?? 2000;
+
+  final foodEntries = repo.foodEntriesFor(day) as List;
+  final calories = foodEntries.fold<double>(
+    0,
+    (sum, e) => sum + ((e.calories as double?) ?? 0),
+  );
+
   return DailyHeadline(
     steps: steps,
     stepGoal: stepGoal,
     stepProgress: stepGoal > 0 ? (steps / stepGoal).clamp(0.0, 1.0) : 0.0,
+    calories: calories,
+    calorieTarget: calorieTarget,
+    calorieProgress:
+        calorieTarget > 0 ? (calories / calorieTarget).clamp(0.0, 1.0) : 0.0,
     water: repo.waterFor(day),
     sleepHours: (repo.sleepFor(day)?.hours as double?) ?? 0,
     workoutCount: (repo.workoutsFor(day) as List).length,

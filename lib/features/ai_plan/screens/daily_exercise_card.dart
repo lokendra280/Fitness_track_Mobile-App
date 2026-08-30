@@ -2,122 +2,129 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
+import 'package:habitflow/data/models/daily_workout.dart';
 import 'package:habitflow/data/models/exercise_item.dart';
-import '../providers/daily_exercise_provider.dart';
+import 'package:habitflow/data/repositories/journey_repository_provider.dart';
+import 'package:habitflow/features/ai_plan/providers/daily_exercise_provider.dart';
+import 'package:habitflow/features/ai_plan/providers/weekly_workout_provider.dart';
 
-class DailyExerciseCard extends ConsumerWidget {
-  const DailyExerciseCard({super.key});
+class AiSuggestedScheduleList extends ConsumerWidget {
+  final List<DailyWorkout> weeklySchedule;
+
+  const AiSuggestedScheduleList({super.key, required this.weeklySchedule});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dailyExerciseProvider);
-    final toggle = ref.watch(toggleExerciseProvider);
+    final today = DateTime.now();
+    final weekStart =
+        today.subtract(Duration(days: today.weekday - 1)); // Monday
 
-    if (state.workout == null) {
-      return const _EmptyState(
-        icon: Icons.event_busy_rounded,
-        text: 'No workout plan generated yet.',
-      );
-    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: weeklySchedule.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, i) {
+        final date = weekStart.add(Duration(days: i));
+        return _DaySection(day: weeklySchedule[i], date: date);
+      },
+    );
+  }
+}
 
-    if (state.workout!.isRestDay) {
-      return const _EmptyState(
-        icon: Icons.self_improvement_rounded,
-        text: 'Rest day — recovery is part of the plan.',
-      );
-    }
+class _DaySection extends ConsumerWidget {
+  final DailyWorkout day;
+  final DateTime date;
+  const _DaySection({required this.day, required this.date});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final today = DateTime.now();
+    final isToday = _isSameDate(date, today);
+    final isFuture = date.isAfter(DateTime(today.year, today.month, today.day));
+    final isPast = !isToday && !isFuture;
+
+    final completedNames = day.isRestDay
+        ? const <String>{}
+        : ref.watch(completedExercisesForDateProvider(dateKeyFor(date)));
+
+    final doneCount =
+        day.exercises.where((e) => completedNames.contains(e.name)).length;
+    final remaining = day.exercises.length - doneCount;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isToday
+              ? AppColors.primary.withValues(alpha: 0.4)
+              : AppColors.textMuted.withValues(alpha: 0.15),
+          width: isToday ? 1.5 : 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      state.workout!.day.toUpperCase(),
-                      style: AppTypography.labelSmall,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      state.workout!.focus ?? 'Workout',
-                      style: AppTypography.h3,
-                    ),
-                  ],
-                ),
-              ),
-              _ProgressRing(progress: state.progress, done: state.isFullyDone),
+              Text(day.day, style: AppTypography.h3),
+              const SizedBox(width: 8),
+              if (day.isRestDay)
+                _Pill(text: 'Rest day', color: AppColors.textMuted)
+              else if (day.focus != null)
+                _Pill(text: day.focus!, color: AppColors.primary),
+              const Spacer(),
+              // if (!day.isRestDay && day.exercises.isNotEmpty)
+              //   Text(
+              //     isFuture
+              //         ? '${day.exercises.length} planned'
+              //         : isPast
+              //             ? '$doneCount of ${day.exercises.length} done'
+              //             : '$doneCount done · $remaining remaining',
+              //     style: AppTypography.bodySmall,
+              //   ),
             ],
           ),
-          const SizedBox(height: 16),
-          for (final exercise in state.workout!.exercises)
-            _ExerciseRow(
-              exercise: exercise,
-              isDone: state.completedExerciseNames.contains(exercise.name),
-              onToggle: () => toggle(exercise.name),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressRing extends StatelessWidget {
-  final double progress;
-  final bool done;
-  const _ProgressRing({required this.progress, required this.done});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: progress),
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOut,
-            builder: (context, value, _) => CircularProgressIndicator(
-              value: value,
-              strokeWidth: 4,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation(
-                done ? AppColors.primary : Colors.deepOrange,
+          if (!day.isRestDay) ...[
+            const SizedBox(height: 12),
+            for (final exercise in day.exercises)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: _ExerciseLine(
+                  exercise: exercise,
+                  isDone: completedNames.contains(exercise.name),
+                  // Only today is checkable — past days are a locked
+                  // record of what happened, future days have nothing
+                  // to log yet.
+                  onToggle: !isToday
+                      ? null
+                      : () async {
+                          final repo = ref.read(journeyRepositoryProvider);
+                          await repo.toggleExerciseDone(date, exercise.name);
+                          ref.invalidate(completedExercisesForDateProvider(
+                              dateKeyFor(date)));
+                          ref.invalidate(weeklyWorkoutSummaryProvider);
+                        },
+                ),
               ),
-            ),
-          ),
-          if (done)
-            const Icon(Icons.check_rounded, color: AppColors.primary, size: 20),
+          ],
         ],
       ),
     );
   }
+
+  bool _isSameDate(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-class _ExerciseRow extends StatelessWidget {
+class _ExerciseLine extends StatelessWidget {
   final ExerciseItem exercise;
   final bool isDone;
-  final VoidCallback onToggle;
+  final VoidCallback? onToggle;
 
-  const _ExerciseRow({
+  const _ExerciseLine({
     required this.exercise,
     required this.isDone,
     required this.onToggle,
@@ -136,33 +143,37 @@ class _ExerciseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final disabled = onToggle == null;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         onTap: onToggle,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 24,
-                height: 24,
+                duration: const Duration(milliseconds: 150),
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDone ? AppColors.primary : Colors.transparent,
                   border: Border.all(
-                    color: isDone ? AppColors.primary : Colors.grey.shade300,
+                    color: isDone
+                        ? AppColors.primary
+                        : AppColors.textMuted.withValues(alpha: 0.4),
                     width: 2,
                   ),
                 ),
                 child: isDone
                     ? const Icon(Icons.check_rounded,
-                        size: 15, color: Colors.white)
+                        size: 13, color: Colors.white)
                     : null,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Container(
                 width: 6,
                 height: 6,
@@ -171,13 +182,15 @@ class _ExerciseRow extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   exercise.name,
-                  style: AppTypography.labelLarge.copyWith(
+                  style: AppTypography.body.copyWith(
                     decoration: isDone ? TextDecoration.lineThrough : null,
-                    color: isDone ? AppColors.textMuted : AppColors.textPrimary,
+                    color: disabled && !isDone
+                        ? AppColors.textMuted
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -190,31 +203,25 @@ class _ExerciseRow extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
+class _Pill extends StatelessWidget {
   final String text;
-  const _EmptyState({required this.icon, required this.text});
+  final Color color;
+  const _Pill({required this.text, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: AppColors.textMuted),
-          const SizedBox(height: 10),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: AppTypography.bodyLarge
-                .copyWith(color: AppColors.textSecondary),
-          ),
-        ],
+      child: Text(
+        text,
+        style: AppTypography.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

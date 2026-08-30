@@ -40,6 +40,16 @@ final dailyExerciseProvider = Provider.autoDispose<DailyExerciseState>((ref) {
     completedExerciseNames: completed,
   );
 });
+final completedExercisesForDateProvider =
+    Provider.autoDispose.family<Set<String>, String>((ref, dateKey) {
+  final repo = ref.watch(journeyRepositoryProvider);
+  final date = DateTime.parse(dateKey);
+  return repo.completedExercisesFor(date);
+});
+
+String dateKeyFor(DateTime date) => '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
 
 /// Call this to check/uncheck one exercise — invalidates dailyExerciseProvider
 /// so the UI updates immediately.

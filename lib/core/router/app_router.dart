@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/router/daily_workout_schedule_route.dart';
+import 'package:habitflow/data/models/daily_workout.dart';
+import 'package:habitflow/features/ai_plan/screens/daily_exercise_card.dart';
 import 'package:habitflow/features/personal_profile/screens/widgets/edit_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,7 +33,7 @@ import 'package:habitflow/features/habit_tracking/habit_tracking_screen.dart';
 import 'package:habitflow/features/daily_check_in/daily_check_in_screen.dart';
 import 'package:habitflow/features/ai_daily_review/ai_daily_review_screen.dart';
 import 'package:habitflow/features/ai_coach/ai_coach_screen.dart';
-import 'package:habitflow/features/weekly_review/review_screens.dart';
+import 'package:habitflow/features/weekly_review/report_screens.dart';
 import 'package:habitflow/features/milestones/milestones_screen.dart';
 import 'package:habitflow/features/reports/journey_completion_screen.dart';
 import 'package:habitflow/core/privacy/consent_provider.dart';
@@ -71,6 +74,7 @@ abstract class AppRoutes {
   static const signUp = '/sign-up';
   static const verifyOtp = '/verify-otp';
   static const oneBoarding = '/onBoarding';
+  static const dailyWorkout = '/daily-workout';
 }
 
 /// Bridges a Stream (Supabase's auth state changes) into a Listenable so
@@ -189,10 +193,10 @@ List<RouteBase> buildAppRoutes() {
     //   path: AppRoutes.weeklyReview,
     //   builder: (_, __) => const WeeklyReviewScreen(),
     // ),
-    // GoRoute(
-    //   path: AppRoutes.monthlyReview,
-    //   builder: (_, __) => const MonthlyReviewScreen(),
-    // ),
+    GoRoute(
+      path: AppRoutes.dailyWorkout,
+      builder: (_, __) => const DailyWorkoutScheduleRoute(),
+    ),
     GoRoute(
       path: AppRoutes.milestones,
       builder: (_, __) => const MilestonesScreen(),

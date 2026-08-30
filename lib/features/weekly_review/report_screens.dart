@@ -5,14 +5,13 @@ import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/core/widgets/animated_common.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
+import 'package:habitflow/features/weekly_review/models/daily_headline.dart';
 import 'package:habitflow/features/weekly_review/models/perodic_meters.dart';
+import 'package:habitflow/features/weekly_review/providers/recovery_rate_provider.dart';
 import 'providers/review_providers.dart';
 
 enum ReportPeriod { daily, weekly, monthly }
 
-/// Single entry point for all three report views, toggled via segmented
-/// control. Defaults to Daily per the request — daily is the tab shown
-/// on first open, not weekly/monthly.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -28,7 +27,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final today = DateTime.now();
 
     return Scaffold(
-      //  backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -49,9 +47,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ReportPeriod.daily => _DailyReviewBody(day: today),
                 ReportPeriod.weekly => _WeeklyReviewBody(
                     weekStart: today.subtract(const Duration(days: 7)),
+                    today: today,
                   ),
                 ReportPeriod.monthly => _MonthlyReviewBody(
                     monthStart: today.subtract(const Duration(days: 30)),
+                    today: today,
                   ),
               },
             ),
@@ -119,6 +119,60 @@ class _PeriodToggle extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Shared: info icon → explanation sheet
+// ---------------------------------------------------------------------------
+
+/// Small (?) icon that opens a bottom sheet explaining what a metric
+/// means. Used next to chart titles and stat items whose meaning isn't
+/// self-evident (recovery rate, consistency, etc).
+class _InfoIconButton extends StatelessWidget {
+  final String title;
+  final String description;
+  const _InfoIconButton({required this.title, required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (ctx) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Text(title, style: AppTypography.h3),
+              const SizedBox(height: 10),
+              Text(description, style: AppTypography.body),
+            ],
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(Icons.help_outline_rounded,
+            size: 16, color: Colors.grey.shade400),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Daily
 // ---------------------------------------------------------------------------
 
@@ -153,12 +207,17 @@ class _DailyReviewBody extends ConsumerWidget {
     final sections = <Widget>[
       _DailyHeroHeader(headline: headline),
       const SizedBox(height: 20),
-      _DailyStatGrid(
-        headline: headline,
-      ),
+      _DailyStatGrid(headline: headline),
       const SizedBox(height: 28),
       Text('Last 7 days', style: AppTypography.h2),
       const SizedBox(height: 12),
+      _TrendChartCard(
+        title: 'Calories',
+        values: trendMetrics.caloriesPerDay,
+        color: AppColors.calories,
+        unit: 'kcal',
+      ),
+      const SizedBox(height: 16),
       _TrendChartCard(
         title: 'Steps',
         values: trendMetrics.stepsPerDay,
@@ -269,6 +328,13 @@ class _DailyStatGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _StatItem(
+        icon: Icons.local_fire_department_rounded,
+        color: AppColors.calories,
+        label: 'Calories',
+        value: '${headline.calories.round()}',
+        unit: 'kcal',
+      ),
+      _StatItem(
         icon: Icons.water_drop_rounded,
         color: AppColors.goalCardioColor,
         label: 'Water',
@@ -316,12 +382,15 @@ class _DailyStatGrid extends StatelessWidget {
 
 class _WeeklyReviewBody extends ConsumerWidget {
   final DateTime weekStart;
-  const _WeeklyReviewBody({required this.weekStart});
+  final DateTime today;
+  const _WeeklyReviewBody({required this.weekStart, required this.today});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final metricsAsync = ref.watch(weeklyMetricsProvider(weekStart));
     final review = ref.watch(weeklyReviewProvider(weekStart));
+    final recovery =
+        ref.watch(recoveryRateProvider((start: weekStart, end: today)));
 
     return metricsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -339,23 +408,28 @@ class _WeeklyReviewBody extends ConsumerWidget {
         periodLabel: 'This week',
         metrics: metrics,
         review: review,
+        recovery: recovery,
         showSleepTrend: true,
       ),
     );
   }
 }
+
 // ---------------------------------------------------------------------------
 // Monthly
 // ---------------------------------------------------------------------------
 
 class _MonthlyReviewBody extends ConsumerWidget {
   final DateTime monthStart;
-  const _MonthlyReviewBody({required this.monthStart});
+  final DateTime today;
+  const _MonthlyReviewBody({required this.monthStart, required this.today});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final metricsAsync = ref.watch(monthlyMetricsProvider(monthStart));
     final review = ref.watch(monthlyReviewProvider(monthStart));
+    final recovery =
+        ref.watch(recoveryRateProvider((start: monthStart, end: today)));
 
     return metricsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -373,6 +447,7 @@ class _MonthlyReviewBody extends ConsumerWidget {
         periodLabel: 'Last 30 days',
         metrics: metrics,
         review: review,
+        recovery: recovery,
         showSleepTrend: false,
       ),
     );
@@ -384,12 +459,14 @@ class _PeriodicReviewBody extends StatelessWidget {
     required this.periodLabel,
     required this.metrics,
     required this.review,
+    required this.recovery,
     required this.showSleepTrend,
   });
 
   final String periodLabel;
   final PeriodMetrics metrics;
   final AsyncValue<String> review;
+  final RecoveryRateSeries recovery;
   final bool showSleepTrend;
 
   @override
@@ -397,10 +474,42 @@ class _PeriodicReviewBody extends StatelessWidget {
     final sections = <Widget>[
       _HeroHeader(periodLabel: periodLabel, metrics: metrics),
       const SizedBox(height: 20),
-      _StatGrid(metrics: metrics),
+      _StatGrid(metrics: metrics, recoveryAvg: recovery.average),
       const SizedBox(height: 28),
-      Text('Trends', style: AppTypography.h2),
+      Row(
+        children: [
+          Text('Trends', style: AppTypography.h2),
+          const SizedBox(width: 4),
+          _InfoIconButton(
+            title: 'Trends',
+            description:
+                'Daily values over this period for the metrics you track. '
+                'Use these to spot patterns — e.g. steps dropping on '
+                'weekends, or water intake trailing off later in the week.',
+          ),
+        ],
+      ),
       const SizedBox(height: 12),
+      _TrendChartCard(
+        title: 'Recovery rate',
+        values: recovery.valuesPerDay,
+        color: AppColors.goalStrengthColor,
+        unit: '%',
+        infoText: 'A combined score (0-100%) of two things: how much of your '
+            'weight goal you\'ve closed so far, and how consistently '
+            'you\'ve completed your planned exercises each day. Rest days '
+            'count as fully compliant. It\'s meant as a single at-a-glance '
+            'read on how "on track" you are — not a medical or '
+            'physiological measure of recovery.',
+      ),
+      const SizedBox(height: 16),
+      _TrendChartCard(
+        title: 'Calories',
+        values: metrics.caloriesPerDay,
+        color: AppColors.calories,
+        unit: 'kcal',
+      ),
+      const SizedBox(height: 16),
       _TrendChartCard(
         title: 'Steps',
         values: metrics.stepsPerDay,
@@ -500,13 +609,21 @@ class _HeroHeader extends StatelessWidget {
 }
 
 class _StatGrid extends StatelessWidget {
-  const _StatGrid({required this.metrics});
+  const _StatGrid({required this.metrics, required this.recoveryAvg});
 
   final PeriodMetrics metrics;
+  final double recoveryAvg;
 
   @override
   Widget build(BuildContext context) {
     final items = [
+      _StatItem(
+        icon: Icons.local_fire_department_rounded,
+        color: AppColors.calories,
+        label: 'Avg calories',
+        value: '${metrics.avgCalories.round()}',
+        unit: 'kcal',
+      ),
       _StatItem(
         icon: Icons.water_drop_rounded,
         color: AppColors.goalCardioColor,
@@ -534,6 +651,18 @@ class _StatGrid extends StatelessWidget {
         label: 'Consistency',
         value: '${(metrics.habitConsistency * 100).round()}',
         unit: '%',
+        infoText: 'Percentage of your tracked habits you completed, averaged '
+            'across this period.',
+      ),
+      _StatItem(
+        icon: Icons.favorite_rounded,
+        color: AppColors.goalStrengthColor,
+        label: 'Recovery rate',
+        value: '${recoveryAvg.round()}',
+        unit: '%',
+        infoText: 'A combined score of weight-goal progress and exercise '
+            'compliance, averaged across this period. See the chart '
+            'below for the day-by-day breakdown.',
       ),
     ];
 
@@ -556,6 +685,7 @@ class _StatItem extends StatelessWidget {
     required this.label,
     required this.value,
     required this.unit,
+    this.infoText,
   });
 
   final IconData icon;
@@ -563,6 +693,7 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
   final String unit;
+  final String? infoText;
 
   @override
   Widget build(BuildContext context) {
@@ -598,11 +729,19 @@ class _StatItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: AppTypography.labelSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: AppTypography.labelSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (infoText != null)
+                      _InfoIconButton(title: label, description: infoText!),
+                  ],
                 ),
                 const SizedBox(height: 1),
                 FittedBox(
@@ -640,12 +779,14 @@ class _TrendChartCard extends StatelessWidget {
     required this.values,
     required this.color,
     required this.unit,
+    this.infoText,
   });
 
   final String title;
   final List<double> values;
   final Color color;
   final String unit;
+  final String? infoText;
 
   @override
   Widget build(BuildContext context) {
@@ -674,7 +815,13 @@ class _TrendChartCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: AppTypography.h4),
+              Row(
+                children: [
+                  Text(title, style: AppTypography.h4),
+                  if (infoText != null)
+                    _InfoIconButton(title: title, description: infoText!),
+                ],
+              ),
               Text(
                 'avg ${avg.toStringAsFixed(avg >= 100 ? 0 : 1)} $unit',
                 style: AppTypography.bodySmall,

@@ -44,7 +44,7 @@ class JourneyRemoteRepository {
       'current_weight': goal.currentWeight,
       'target_weight': goal.targetWeight,
       'weight_unit': goal.weightUnit,
-      'start_date': goal.startDate?.toIso8601String(),
+      'start_date': DateTime.now().toIso8601String(),
       'target_date': goal.targetDate?.toIso8601String(),
       'age': profile.age,
       'gender': profile.gender,
@@ -63,10 +63,15 @@ class JourneyRemoteRepository {
     required String userId,
     required AiPlan plan,
   }) async {
-    await _client.from(_table).update({
+    // upsert (not update) — the plan can be generated as part of the same
+    // flow as profile creation, and there's no guarantee the parent row
+    // has been created yet when this runs. update() would silently match
+    // zero rows in that case; upsert() creates the row if needed.
+    await _client.from(_table).upsert({
+      'user_id': userId,
       'ai_plan': plan.toJson(),
       'updated_at': DateTime.now().toIso8601String(),
-    }).eq('user_id', userId);
+    });
   }
 
   // ---------------------------------------------------------------------

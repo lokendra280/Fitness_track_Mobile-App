@@ -96,9 +96,39 @@ class PlanCalculator {
     return goalType == 'weight_loss' ? base + 1000 : base;
   }
 
-  static double kgFrom(double weight, String unit) =>
-      unit.toLowerCase() == 'lb' ? weight * 0.45359237 : weight;
+  /// Recognized units for weight conversion.
+  static const _weightUnits = {'kg', 'lb', 'lbs'};
 
-  static double cmFrom(double height, String unit) =>
-      unit.toLowerCase() == 'in' ? height * 2.54 : height;
+  /// Recognized units for height conversion.
+  static const _heightUnits = {'cm', 'in', 'inch', 'inches', 'ft_in'};
+
+  /// Converts weight to kilograms. Throws [ArgumentError] on an
+  /// unrecognized unit instead of silently guessing — these numbers gate
+  /// real nutrition targets, so a typo in unit text must fail loudly.
+  static double kgFrom(double weight, String unit) {
+    final u = unit.toLowerCase().trim();
+    if (!_weightUnits.contains(u)) {
+      throw ArgumentError.value(
+          unit, 'unit', 'Unrecognized weight unit — expected "kg" or "lb"');
+    }
+    return (u == 'lb' || u == 'lbs') ? weight * 0.45359237 : weight;
+  }
+
+  /// Converts height to centimeters. Throws [ArgumentError] on an
+  /// unrecognized unit. For feet+inches input, pre-combine into a single
+  /// inches value with [inchesFromFeetAndInches] and pass unit 'in'.
+  static double cmFrom(double height, String unit) {
+    final u = unit.toLowerCase().trim();
+    if (!_heightUnits.contains(u)) {
+      throw ArgumentError.value(
+          unit, 'unit', 'Unrecognized height unit — expected "cm" or "in"');
+    }
+    final isInches = u == 'in' || u == 'inch' || u == 'inches';
+    return isInches ? height * 2.54 : height;
+  }
+
+  /// Combines feet + inches into a single inches value, e.g. for a
+  /// 5'8" user: `inchesFromFeetAndInches(5, 8) == 68`.
+  static double inchesFromFeetAndInches(int feet, double inches) =>
+      feet * 12 + inches;
 }

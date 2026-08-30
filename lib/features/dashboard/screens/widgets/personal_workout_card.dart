@@ -27,7 +27,7 @@ class PersonalWorkoutCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 150,
+          height: 120,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,

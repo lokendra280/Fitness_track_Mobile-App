@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class DailyReportChart extends StatelessWidget {
   const DailyReportChart({
     super.key,
-    required this.waterMl,
+    required this.waterMl,  
     required this.steps,
     required this.workoutCount,
     required this.sleepHours,

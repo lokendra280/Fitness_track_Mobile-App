@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../data/models/ai_plan.dart';
-import '../providers/ai_plan_provider.dart';
-import '../../habit_tracking/providers/habit_proof_provider.dart';
+import 'package:habitflow/core/router/app_router.dart';
+import 'package:habitflow/data/models/ai_plan.dart';
+import 'package:habitflow/data/models/daily_workout.dart';
+import 'package:habitflow/data/models/exercise_item.dart';
+import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
+import 'package:habitflow/features/habit_tracking/providers/habit_proof_provider.dart';
 
 class AiPlanScreen extends ConsumerWidget {
   const AiPlanScreen({super.key});
@@ -255,12 +258,10 @@ class _PlanReview extends ConsumerWidget {
                 label: 'Step target',
                 value: '${plan.stepTarget} steps/day',
               ),
-              _PlanTile(
-                icon: Icons.fitness_center_rounded,
-                color: Colors.deepOrange,
-                label: 'Exercise',
-                value: '${plan.workoutDaysPerWeek}x / week',
-              ),
+              if (plan.weeklySchedule.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                _WeeklyScheduleSection(schedule: plan.weeklySchedule),
+              ],
               _PlanTile(
                 icon: Icons.bedtime_rounded,
                 color: Colors.indigo,
@@ -318,7 +319,7 @@ class _PlanReview extends ConsumerWidget {
               FilledButton(
                 onPressed: () async {
                   await controller.acceptPlan(plan);
-                  if (context.mounted) context.go('/dashboard');
+                  if (context.mounted) context.go(AppRoutes.bottomNavbar);
                 },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
@@ -640,6 +641,199 @@ class _HabitListSection extends StatelessWidget {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+/// Day-by-day workout view: a horizontal day selector (rest days visibly
+/// dimmed) with the selected day's focus + exercises below.
+class _WeeklyScheduleSection extends StatefulWidget {
+  final List<DailyWorkout> schedule;
+  const _WeeklyScheduleSection({required this.schedule});
+
+  @override
+  State<_WeeklyScheduleSection> createState() => _WeeklyScheduleSectionState();
+}
+
+class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to today's weekday if it's in the schedule, else day 0.
+    final todayName = const [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ][DateTime.now().weekday - 1];
+    final idx = widget.schedule.indexWhere((d) => d.day == todayName);
+    _selectedIndex = idx == -1 ? 0 : idx;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final selected = widget.schedule[_selectedIndex];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Weekly schedule', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 64,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.schedule.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final day = widget.schedule[i];
+                final isSelected = i == _selectedIndex;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedIndex = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 52,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : day.isRestDay
+                              ? colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.4)
+                              : colorScheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          day.day.substring(0, 3).toUpperCase(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : day.isRestDay
+                                    ? colorScheme.onSurfaceVariant
+                                    : colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Icon(
+                          day.isRestDay
+                              ? Icons.self_improvement_rounded
+                              : Icons.fitness_center_rounded,
+                          size: 16,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : day.isRestDay
+                                  ? colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5)
+                                  : colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (selected.isRestDay)
+            SingleChildScrollView(
+              child: Row(
+                children: [
+                  Icon(Icons.self_improvement_rounded,
+                      size: 18, color: colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Rest day — recovery is part of the plan.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            if (selected.focus != null) ...[
+              Text(
+                selected.focus!,
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(color: colorScheme.primary),
+              ),
+              const SizedBox(height: 10),
+            ],
+            ...selected.exercises.map((e) => _ExerciseRow(exercise: e)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ExerciseRow extends StatelessWidget {
+  final ExerciseItem exercise;
+  const _ExerciseRow({required this.exercise});
+
+  Color _categoryColor(BuildContext context) {
+    switch (exercise.category) {
+      case ExerciseCategory.cardio:
+        return Colors.redAccent;
+      case ExerciseCategory.mobility:
+        return Colors.purpleAccent;
+      case ExerciseCategory.strength:
+        return Colors.blueAccent;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _categoryColor(context),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(exercise.name, style: theme.textTheme.bodyMedium),
+          ),
+          Text(
+            exercise.sets,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );

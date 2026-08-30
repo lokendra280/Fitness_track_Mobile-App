@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
 import 'package:habitflow/data/repositories/journey_remote_repository.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,10 +17,6 @@ const _kPersonalProfileKey = 'personal_profile';
 const _kAiPlanKey = 'ai_plan';
 const _kWeightLogKey = 'weight_log'; // List<{date, weight}>, newest last
 
-/// Thin persistence layer over a single Hive box, keyed by string.
-/// Phase 4+ will add typed sub-repositories (food, water, workouts, sleep,
-/// body measurements) that read/write into the same box using date-prefixed
-/// keys, e.g. 'food_2026-08-10'.
 class JourneyRepository {
   final Box box;
 
@@ -82,9 +81,8 @@ class JourneyRepository {
         goal: loadGoal(),
         profile: loadProfile(),
       );
-    } catch (_) {
-      // Swallow — local Hive write already succeeded; remote will catch up
-      // next time saveGoal/saveProfile runs successfully, or on next hydrate.
+    } catch (e) {
+      debugPrint('⚠️ Remote sync failed: $e');
     }
   }
 
@@ -183,6 +181,16 @@ class JourneyRepository {
   int waterFor(DateTime day) => (box.get(_dk('water', day)) as int?) ?? 0;
   Future<void> saveWater(DateTime day, int ml) =>
       box.put(_dk('water', day), ml);
+  List<Map<String, dynamic>> weightLogEntriesInRange(
+      DateTime start, DateTime end) {
+    final startDay = DateTime(start.year, start.month, start.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+    return _rawWeightLog().where((e) {
+      final d = DateTime.parse(e['date'] as String);
+      final day = DateTime(d.year, d.month, d.day);
+      return !day.isBefore(startDay) && !day.isAfter(endDay);
+    }).toList();
+  }
 
   // --- Phase 4: workouts ---
   List<WorkoutEntry> workoutsFor(DateTime day) =>

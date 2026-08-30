@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
+import 'package:habitflow/features/ai_plan/providers/weekly_workout_provider.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/greeting_header.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
@@ -87,14 +88,18 @@ class DashboardScreen extends ConsumerWidget {
       ),
       SBC.lHM,
 
-      PersonalWorkoutCard(
-        title: "WorkOut",
-        completedCount: 2,
-        totalCount: 10,
-        onTap: () {
-          context.push('/daily-workout');
+      Consumer(
+        builder: (context, ref, _) {
+          final summary = ref.watch(weeklyWorkoutSummaryProvider);
+          return PersonalWorkoutCard(
+            title: "My personal WorkOut",
+            completedCount: summary.completedCount,
+            totalCount: summary.totalCount,
+            onTap: () {
+              context.push('/daily-workout');
+            },
+          );
         },
-        // backgroundImage: Image.asset(name),
       ),
       // JourneyCard(
       //   progress: data.progressPercentage ?? 0,

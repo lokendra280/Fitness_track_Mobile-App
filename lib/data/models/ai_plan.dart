@@ -1,11 +1,11 @@
 import 'package:habitflow/data/models/daily_workout.dart';
 
 class AiPlan {
-  final int calorieTarget; // kcal/day
-  final int waterTarget; // ml
+  final int calorieTarget;
+  final int waterTarget;
   final int stepTarget;
-  final List<DailyWorkout> weeklySchedule; // 7 entries, Monday–Sunday
-  final String sleepTarget; // e.g. '7-9_hours'
+  final List<DailyWorkout> weeklySchedule;
+  final String sleepTarget;
   final bool mealTracking;
   final List<String> recommendedHabits;
   final List<String> milestones;
