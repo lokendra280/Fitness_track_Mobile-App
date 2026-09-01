@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/constants/app_topography.dart';
 import 'package:habitflow/core/router/app_router.dart';
+import 'package:habitflow/core/theme/app_theme.dart';
+import 'package:habitflow/core/widgets/animated_common.dart';
 import 'package:habitflow/data/models/ai_plan.dart';
 import 'package:habitflow/data/models/daily_workout.dart';
 import 'package:habitflow/data/models/exercise_item.dart';
@@ -16,11 +19,9 @@ class AiPlanScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final generation = ref.watch(aiPlanGenerationProvider);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: generation.when(
           loading: () => const _LoadingState(),
@@ -35,8 +36,10 @@ class AiPlanScreen extends ConsumerWidget {
   }
 }
 
-/// Cycles through the plan's target categories while it generates —
-/// reads as "actively building something" rather than a static spinner.
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
 class _LoadingState extends StatefulWidget {
   const _LoadingState();
 
@@ -44,8 +47,7 @@ class _LoadingState extends StatefulWidget {
   State<_LoadingState> createState() => _LoadingStateState();
 }
 
-class _LoadingStateState extends State<_LoadingState>
-    with SingleTickerProviderStateMixin {
+class _LoadingStateState extends State<_LoadingState> {
   static const _steps = [
     (Icons.water_drop_rounded, 'Calculating your water target'),
     (Icons.directions_walk_rounded, 'Setting a daily step goal'),
@@ -73,8 +75,6 @@ class _LoadingStateState extends State<_LoadingState>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final (icon, label) = _steps[_index];
 
     return Center(
@@ -84,36 +84,49 @@ class _LoadingStateState extends State<_LoadingState>
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 88,
-              height: 88,
+              width: 96,
+              height: 96,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const SizedBox(
-                    width: 88,
-                    height: 88,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    transitionBuilder: (child, anim) => ScaleTransition(
-                      scale: anim,
-                      child: FadeTransition(opacity: anim, child: child),
+                  SizedBox(
+                    width: 96,
+                    height: 96,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: AppColors.goalStepsColor,
+                      backgroundColor:
+                          AppColors.goalStepsColor.withValues(alpha: 0.12),
                     ),
-                    child: Icon(
-                      icon,
-                      key: ValueKey(icon),
-                      size: 32,
-                      color: colorScheme.primary,
+                  ),
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.goalStepsColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 350),
+                      transitionBuilder: (child, anim) => ScaleTransition(
+                        scale: anim,
+                        child: FadeTransition(opacity: anim, child: child),
+                      ),
+                      child: Icon(
+                        icon,
+                        key: ValueKey(icon),
+                        size: 28,
+                        color: AppColors.goalStepsColor,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             Text(
               'Building your plan',
-              style: theme.textTheme.titleMedium,
+              style: AppTypography.h2,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -122,7 +135,8 @@ class _LoadingStateState extends State<_LoadingState>
               child: Text(
                 label,
                 key: ValueKey(label),
-                style: theme.textTheme.bodyMedium,
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -133,6 +147,10 @@ class _LoadingStateState extends State<_LoadingState>
   }
 }
 
+// ---------------------------------------------------------------------------
+// Error
+// ---------------------------------------------------------------------------
+
 class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
@@ -140,9 +158,6 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -154,23 +169,24 @@ class _ErrorState extends StatelessWidget {
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: colorScheme.errorContainer,
+                color: AppColors.goalCardioColor.withValues(alpha: 0.12),
               ),
               child: Icon(Icons.error_outline_rounded,
-                  size: 32, color: colorScheme.onErrorContainer),
+                  size: 32, color: AppColors.goalCardioColor),
             ),
             const SizedBox(height: 20),
-            Text('Something went wrong', style: theme.textTheme.titleMedium),
+            Text('Something went wrong', style: AppTypography.h3),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
+              style: AppTypography.bodySmall,
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: onRetry,
               style: FilledButton.styleFrom(
+                backgroundColor: AppColors.steps,
                 minimumSize: const Size(160, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -185,186 +201,107 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-class _PlanReview extends ConsumerWidget {
+// ---------------------------------------------------------------------------
+// Plan review
+// ---------------------------------------------------------------------------
+
+class _PlanReview extends ConsumerStatefulWidget {
   final AiPlan plan;
   const _PlanReview({required this.plan});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.read(aiPlanControllerProvider.notifier);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  ConsumerState<_PlanReview> createState() => _PlanReviewState();
+}
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary,
-                  colorScheme.primary.withValues(alpha: 0.82)
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Step 3 of 3',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Your plan is ready',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    color: colorScheme.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Built around your goals, activity, and diet.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
-                  ),
-                ),
-              ],
-            ),
-          ),
+class _PlanReviewState extends ConsumerState<_PlanReview> {
+  bool _accepting = false;
+
+  Future<void> _accept() async {
+    setState(() => _accepting = true);
+    try {
+      await ref.read(aiPlanControllerProvider.notifier).acceptPlan(widget.plan);
+      if (mounted) context.go(AppRoutes.bottomNavbar);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _accepting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save your plan: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plan = widget.plan;
+
+    final sections = <Widget>[
+      _HeroHeader(plan: plan),
+      const SizedBox(height: 20),
+      _TargetStatGrid(plan: plan),
+      if (plan.weeklySchedule.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        _WeeklyScheduleSection(schedule: plan.weeklySchedule),
+      ],
+      const SizedBox(height: 20),
+      _PlanTile(
+        icon: Icons.bedtime_rounded,
+        color: AppColors.goalStrengthColor,
+        label: 'Sleep target',
+        value: plan.sleepTarget.replaceAll('_', ' '),
+      ),
+      const SizedBox(height: 10),
+      _PlanTile(
+        icon: Icons.restaurant_rounded,
+        color: AppColors.goalCardioColor,
+        label: 'Meal tracking',
+        value: plan.mealTracking ? 'Enabled' : 'Disabled',
+      ),
+      if (plan.recommendedHabits.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        _HabitListSection(
+          title: 'Recommended habits',
+          items: plan.recommendedHabits,
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _PlanTile(
-                icon: Icons.water_drop_rounded,
-                color: Colors.blue,
-                label: 'Water target',
-                value: '${plan.waterTarget} ml/day',
+      ],
+      if (plan.milestones.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        _ListSection(
+          icon: Icons.flag_outlined,
+          title: 'Milestones',
+          items: plan.milestones,
+        ),
+      ],
+      const SizedBox(height: 20),
+      _InfoBanner(),
+      // Bottom padding so content clears the fixed action bar.
+      const SizedBox(height: 140),
+    ];
+
+    return Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  for (var i = 0; i < sections.length; i++)
+                    StaggerFadeIn(index: i, child: sections[i]),
+                ]),
               ),
-              _PlanTile(
-                icon: Icons.directions_walk_rounded,
-                color: Colors.green,
-                label: 'Step target',
-                value: '${plan.stepTarget} steps/day',
-              ),
-              if (plan.weeklySchedule.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _WeeklyScheduleSection(schedule: plan.weeklySchedule),
-              ],
-              _PlanTile(
-                icon: Icons.bedtime_rounded,
-                color: Colors.indigo,
-                label: 'Sleep target',
-                value: plan.sleepTarget.replaceAll('_', ' '),
-              ),
-              _PlanTile(
-                icon: Icons.restaurant_rounded,
-                color: Colors.teal,
-                label: 'Meal tracking',
-                value: plan.mealTracking ? 'Enabled' : 'Disabled',
-              ),
-              if (plan.recommendedHabits.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _HabitListSection(
-                  title: 'Recommended habits',
-                  items: plan.recommendedHabits,
-                ),
-              ],
-              if (plan.milestones.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _ListSection(
-                  icon: Icons.flag_outlined,
-                  title: 'Milestones',
-                  items: plan.milestones,
-                ),
-              ],
-              const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        size: 18, color: colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Habits marked with a camera or water icon will '
-                        'ask for a quick photo or glass count when you '
-                        'complete them — everything else is a simple tap.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-              FilledButton(
-                onPressed: () async {
-                  await controller.acceptPlan(plan);
-                  if (context.mounted) context.go(AppRoutes.bottomNavbar);
-                },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(54),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Accept plan', style: theme.textTheme.labelLarge),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.check_rounded, size: 18),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton(
-                onPressed: () => ref.invalidate(aiPlanGenerationProvider),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  side: BorderSide(color: colorScheme.outlineVariant),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.refresh_rounded,
-                        size: 18, color: colorScheme.primary),
-                    const SizedBox(width: 6),
-                    Text('Regenerate',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
-                        )),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => _showCustomizeSheet(context, ref, plan),
-                child: const Text('Customize'),
-              ),
-            ]),
+            ),
+          ],
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _BottomActionBar(
+            accepting: _accepting,
+            onAccept: _accept,
+            onRegenerate: () => ref.invalidate(aiPlanGenerationProvider),
+            onCustomize: () => _showCustomizeSheet(context, ref, plan),
           ),
         ),
       ],
@@ -380,7 +317,6 @@ class _PlanReview extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final colorScheme = Theme.of(ctx).colorScheme;
         return Padding(
           padding: EdgeInsets.only(
             left: 20,
@@ -390,10 +326,9 @@ class _PlanReview extends ConsumerWidget {
           ),
           child: Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -405,13 +340,12 @@ class _PlanReview extends ConsumerWidget {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: colorScheme.outlineVariant,
+                      color: Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                Text('Customize plan',
-                    style: Theme.of(ctx).textTheme.titleMedium),
+                Text('Customize plan', style: AppTypography.h3),
                 const SizedBox(height: 20),
                 TextField(
                   controller: waterCtrl,
@@ -420,8 +354,7 @@ class _PlanReview extends ConsumerWidget {
                     labelText: 'Water target (ml)',
                     prefixIcon: const Icon(Icons.water_drop_rounded, size: 20),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.4),
+                    fillColor: Colors.grey.shade100,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -437,8 +370,7 @@ class _PlanReview extends ConsumerWidget {
                     prefixIcon:
                         const Icon(Icons.directions_walk_rounded, size: 20),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.4),
+                    fillColor: Colors.grey.shade100,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -458,9 +390,10 @@ class _PlanReview extends ConsumerWidget {
                           plan.copyWith(waterTarget: water, stepTarget: steps),
                         );
                     if (ctx.mounted) Navigator.of(ctx).pop();
-                    if (context.mounted) context.go('/dashboard');
+                    if (context.mounted) context.go(AppRoutes.bottomNavbar);
                   },
                   style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.steps,
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -477,6 +410,172 @@ class _PlanReview extends ConsumerWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Hero header
+// ---------------------------------------------------------------------------
+
+class _HeroHeader extends StatelessWidget {
+  final AiPlan plan;
+  const _HeroHeader({required this.plan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.steps,
+            AppColors.steps.withValues(alpha: 0.78),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'AI-GENERATED PLAN',
+                style: AppTypography.labelSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Your plan is ready',
+            style: AppTypography.displayMedium.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Built around your goals, activity, and diet.',
+            style: AppTypography.body.copyWith(
+              color: Colors.white.withValues(alpha: 0.88),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Target stat grid — replaces stacked water/step tiles with a 2-up grid
+// ---------------------------------------------------------------------------
+
+class _TargetStatGrid extends StatelessWidget {
+  final AiPlan plan;
+  const _TargetStatGrid({required this.plan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            icon: Icons.water_drop_rounded,
+            color: AppColors.goalCardioColor,
+            label: 'Water',
+            value: '${plan.waterTarget}',
+            unit: 'ml/day',
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.directions_walk_rounded,
+            color: AppColors.goalStepsColor,
+            label: 'Steps',
+            value: '${plan.stepTarget}',
+            unit: '/day',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+  final String unit;
+
+  const _StatCard({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+    required this.unit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(text: value, style: AppTypography.h2),
+                TextSpan(text: ' $unit', style: AppTypography.labelSmall),
+              ],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: AppTypography.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Generic plan tile (sleep / meal tracking)
+// ---------------------------------------------------------------------------
+
 class _PlanTile extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -492,20 +591,16 @@ class _PlanTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -521,15 +616,17 @@ class _PlanTile extends StatelessWidget {
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 14),
-          Expanded(
-            child: Text(label, style: theme.textTheme.bodyMedium),
-          ),
-          Text(value, style: theme.textTheme.titleSmall),
+          Expanded(child: Text(label, style: AppTypography.body)),
+          Text(value, style: AppTypography.labelLarge),
         ],
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// List sections
+// ---------------------------------------------------------------------------
 
 class _ListSection extends StatelessWidget {
   final IconData icon;
@@ -544,37 +641,33 @@ class _ListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleSmall),
+          Text(title, style: AppTypography.h4),
           const SizedBox(height: 12),
           ...items.map((item) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(icon, size: 18, color: colorScheme.primary),
+                    Icon(icon, size: 18, color: AppColors.steps),
                     const SizedBox(width: 10),
-                    Expanded(
-                        child: Text(item, style: theme.textTheme.bodyMedium)),
+                    Expanded(child: Text(item, style: AppTypography.body)),
                   ],
                 ),
               )),
@@ -584,9 +677,6 @@ class _ListSection extends StatelessWidget {
   }
 }
 
-/// Same shape as _ListSection but adds a proof-type icon (camera/water)
-/// next to any recommended habit that inferProofType() flags as needing
-/// evidence — makes it visible upfront, before the user even accepts.
 class _HabitListSection extends StatelessWidget {
   final String title;
   final List<String> items;
@@ -595,27 +685,24 @@ class _HabitListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleSmall),
+          Text(title, style: AppTypography.h4),
           const SizedBox(height: 12),
           ...items.map((item) {
             final proofType = inferProofType(item);
@@ -625,17 +712,16 @@ class _HabitListSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.check_circle_outline_rounded,
-                      size: 18, color: colorScheme.primary),
+                      size: 18, color: AppColors.steps),
                   const SizedBox(width: 10),
-                  Expanded(
-                      child: Text(item, style: theme.textTheme.bodyMedium)),
+                  Expanded(child: Text(item, style: AppTypography.body)),
                   if (proofType != HabitProofType.none)
                     Icon(
                       proofType == HabitProofType.photo
                           ? Icons.camera_alt_rounded
                           : Icons.local_drink_rounded,
                       size: 16,
-                      color: colorScheme.secondary,
+                      color: AppColors.goalCardioColor,
                     ),
                 ],
               ),
@@ -647,8 +733,160 @@ class _HabitListSection extends StatelessWidget {
   }
 }
 
-/// Day-by-day workout view: a horizontal day selector (rest days visibly
-/// dimmed) with the selected day's focus + exercises below.
+// ---------------------------------------------------------------------------
+// Info banner
+// ---------------------------------------------------------------------------
+
+class _InfoBanner extends StatelessWidget {
+  const _InfoBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.steps.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.steps.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: AppColors.steps),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Habits marked with a camera or water icon will ask for a '
+              'quick photo or glass count when you complete them — '
+              'everything else is a simple tap.',
+              style: AppTypography.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Fixed bottom action bar — replaces the three stacked inline buttons
+// ---------------------------------------------------------------------------
+
+class _BottomActionBar extends StatelessWidget {
+  final bool accepting;
+  final VoidCallback onAccept;
+  final VoidCallback onRegenerate;
+  final VoidCallback onCustomize;
+
+  const _BottomActionBar({
+    required this.accepting,
+    required this.onAccept,
+    required this.onRegenerate,
+    required this.onCustomize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: accepting ? null : onAccept,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.steps,
+                  minimumSize: const Size.fromHeight(54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: accepting
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Accept plan',
+                              style: AppTypography.labelLarge
+                                  .copyWith(color: Colors.white)),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.check_rounded,
+                              size: 18, color: Colors.white),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Row(
+            //   children: [
+            //     Expanded(
+            //       child: OutlinedButton(
+            //         onPressed: accepting ? null : onRegenerate,
+            //         style: OutlinedButton.styleFrom(
+            //           minimumSize: const Size.fromHeight(46),
+            //           side: BorderSide(color: Colors.grey.shade300),
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(14),
+            //           ),
+            //         ),
+            //         child: Row(
+            //           mainAxisAlignment: MainAxisAlignment.center,
+            //           children: [
+            //             const Icon(Icons.refresh_rounded,
+            //                 size: 16, color: AppColors.steps),
+            //             const SizedBox(width: 6),
+            //             Text('Regenerate',
+            //                 style: AppTypography.bodySmall
+            //                     .copyWith(color: AppColors.steps)),
+            //           ],
+            //         ),
+            //       ),
+            //     ),
+            //     const SizedBox(width: 10),
+            //     Expanded(
+            //       child: TextButton(
+            //         onPressed: accepting ? null : onCustomize,
+            //         style: TextButton.styleFrom(
+            //           minimumSize: const Size.fromHeight(46),
+            //         ),
+            //         child: Text('Customize', style: AppTypography.bodySmall),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Weekly schedule (unchanged logic, restyled to AppColors/AppTypography)
+// ---------------------------------------------------------------------------
+
 class _WeeklyScheduleSection extends StatefulWidget {
   final List<DailyWorkout> schedule;
   const _WeeklyScheduleSection({required this.schedule});
@@ -663,7 +901,6 @@ class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
   @override
   void initState() {
     super.initState();
-    // Default to today's weekday if it's in the schedule, else day 0.
     final todayName = const [
       'Monday',
       'Tuesday',
@@ -679,28 +916,26 @@ class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final selected = widget.schedule[_selectedIndex];
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Weekly schedule', style: theme.textTheme.titleSmall),
+          Text('Weekly schedule', style: AppTypography.h4),
           const SizedBox(height: 14),
           SizedBox(
             height: 64,
@@ -719,11 +954,10 @@ class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? colorScheme.primary
+                          ? AppColors.steps
                           : day.isRestDay
-                              ? colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.4)
-                              : colorScheme.primary.withValues(alpha: 0.08),
+                              ? Colors.grey.shade100
+                              : AppColors.steps.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
@@ -731,12 +965,12 @@ class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
                       children: [
                         Text(
                           day.day.substring(0, 3).toUpperCase(),
-                          style: theme.textTheme.labelSmall?.copyWith(
+                          style: AppTypography.labelSmall.copyWith(
                             color: isSelected
-                                ? colorScheme.onPrimary
+                                ? Colors.white
                                 : day.isRestDay
-                                    ? colorScheme.onSurfaceVariant
-                                    : colorScheme.primary,
+                                    ? Colors.grey.shade500
+                                    : AppColors.steps,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -747,11 +981,10 @@ class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
                               : Icons.fitness_center_rounded,
                           size: 16,
                           color: isSelected
-                              ? colorScheme.onPrimary
+                              ? Colors.white
                               : day.isRestDay
-                                  ? colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5)
-                                  : colorScheme.primary,
+                                  ? Colors.grey.shade400
+                                  : AppColors.steps,
                         ),
                       ],
                     ),
@@ -762,27 +995,25 @@ class _WeeklyScheduleSectionState extends State<_WeeklyScheduleSection> {
           ),
           const SizedBox(height: 16),
           if (selected.isRestDay)
-            SingleChildScrollView(
-              child: Row(
-                children: [
-                  Icon(Icons.self_improvement_rounded,
-                      size: 18, color: colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'Rest day — recovery is part of the plan.',
-                      style: theme.textTheme.bodyMedium,
-                    ),
+            Row(
+              children: [
+                Icon(Icons.self_improvement_rounded,
+                    size: 18, color: Colors.grey.shade500),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Rest day — recovery is part of the plan.',
+                    style: AppTypography.body,
                   ),
-                ],
-              ),
+                ),
+              ],
             )
           else ...[
             if (selected.focus != null) ...[
               Text(
                 selected.focus!,
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(color: colorScheme.primary),
+                style:
+                    AppTypography.labelLarge.copyWith(color: AppColors.steps),
               ),
               const SizedBox(height: 10),
             ],
@@ -798,20 +1029,19 @@ class _ExerciseRow extends StatelessWidget {
   final ExerciseItem exercise;
   const _ExerciseRow({required this.exercise});
 
-  Color _categoryColor(BuildContext context) {
+  Color get _categoryColor {
     switch (exercise.category) {
       case ExerciseCategory.cardio:
-        return Colors.redAccent;
+        return AppColors.goalCardioColor;
       case ExerciseCategory.mobility:
-        return Colors.purpleAccent;
+        return AppColors.goalStrengthColor;
       case ExerciseCategory.strength:
-        return Colors.blueAccent;
+        return AppColors.calories;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -819,21 +1049,12 @@ class _ExerciseRow extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: _categoryColor(context),
-              shape: BoxShape.circle,
-            ),
+            decoration:
+                BoxDecoration(color: _categoryColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(exercise.name, style: theme.textTheme.bodyMedium),
-          ),
-          Text(
-            exercise.sets,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Expanded(child: Text(exercise.name, style: AppTypography.body)),
+          Text(exercise.sets, style: AppTypography.bodySmall),
         ],
       ),
     );

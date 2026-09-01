@@ -23,13 +23,17 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     try {
       final response = await AuthService.signInWithGoogle();
       if (response == null) {
+        // User cancelled the Google picker — not an error, just abort.
         state = state.copyWith(isLoading: false);
         return;
       }
-
+      // Successful sign-in flows through authStateChanges automatically
+      // (Supabase's onAuthStateChange fires once the session is set),
+      // which updates `state` to .authenticated(...) via the stream
+      // listener in the constructor. We just need to clear isLoading here.
       state = state.copyWith(isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _readableError(e));
     }
   }
 
@@ -47,7 +51,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
         clearPendingVerificationEmail: true,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _readableError(e));
     }
   }
 
@@ -72,17 +76,21 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
         pendingVerificationEmail: email,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _readableError(e));
     }
   }
 
+  /// Was previously calling AuthService.signUpWithEmailPassword — meaning
+  /// every "sign in" attempt was actually trying to create a NEW account,
+  /// which Supabase rejects for an already-registered email. Fixed to
+  /// call the correct signInWithEmail method.
   Future<void> signInWithEmailPassword({
     required String email,
     required String password,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final response = await AuthService.signUpWithEmailPassword(
+      final response = await AuthService.signInWithEmail(
         email: email,
         password: password,
       );
@@ -92,7 +100,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
       }
       state = state.copyWith(isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _readableError(e));
     }
   }
 
@@ -102,7 +110,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     try {
       await AuthService.resendSignUpOtp(email: email);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: _readableError(e));
     }
   }
 
@@ -110,8 +118,9 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _authService.signInWithApple();
+      state = state.copyWith(isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _readableError(e));
     }
   }
 
@@ -120,6 +129,15 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
   }
 
   Future<void> signOut() => _authService.signOut();
+
+  /// AuthException.message is usually already user-readable (e.g.
+  /// "Invalid login credentials"), but a raw caught Exception's
+  /// toString() can leak internal details ("Exception: ..."). This keeps
+  /// the SnackBar copy clean regardless of which error type was thrown.
+  String _readableError(Object e) {
+    final msg = e.toString();
+    return msg.startsWith('Exception: ') ? msg.substring(11) : msg;
+  }
 
   @override
   void dispose() {

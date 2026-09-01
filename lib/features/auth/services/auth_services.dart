@@ -9,9 +9,22 @@ class AuthService {
 
   User? get currentUser => _client.auth.currentUser;
   bool get isSignedIn => currentUser != null;
+
   static final _supabase = Supabase.instance.client;
   static const _webClientId =
       '661083503148-cl9ob8dtehf260itnci2lnrmjfvqh1ur.apps.googleusercontent.com';
+
+  /// google_sign_in v7 requires GoogleSignIn.instance.initialize() to be
+  /// called exactly once before any sign-in attempt — calling it again on
+  /// every tap (the previous behavior) risks throwing or leaving the SDK
+  /// in an inconsistent state on retry after a cancelled first attempt.
+  static bool _googleSignInInitialized = false;
+
+  static Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
+    _googleSignInInitialized = true;
+  }
 
   Stream<AppAuthState> get authStateChanges =>
       _client.auth.onAuthStateChange.map((e) {
@@ -20,20 +33,21 @@ class AuthService {
         return AppAuthState.authenticated(_mapUser(u));
       });
 
+  /// Handles both sign-in AND sign-up for Google — Supabase automatically
+  /// creates a new user record the first time a given Google account signs
+  /// in via signInWithIdToken, so there's no separate "sign up with Google"
+  /// call needed. This one method covers both cases.
   static Future<AuthResponse?> signInWithGoogle() async {
     try {
       debugPrint('🔵 Google Sign-In: starting authenticate()');
 
-      // Initialize with serverClientId before authenticate()
-      await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
+      await _ensureGoogleSignInInitialized();
 
-      // Use authenticate() for version 7.x
       final GoogleSignInAccount googleUser =
           await GoogleSignIn.instance.authenticate();
 
       debugPrint('🔵 Google account: ${googleUser.email}');
 
-      // Get authentication - returns GoogleSignInAuthentication directly
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final String? idToken = googleAuth.idToken;
 
@@ -45,7 +59,6 @@ class AuthService {
         );
       }
 
-      // For accessToken in v7.x, we need to get it from authorizationClient
       String? accessToken;
       try {
         final authorization = await googleUser.authorizationClient
@@ -58,7 +71,6 @@ class AuthService {
         debugPrint('🟡 Could not get access token: $e');
       }
 
-      // Sign in to Supabase with Google tokens
       debugPrint('🔵 Signing in to Supabase...');
       final response = await _supabase.auth.signInWithIdToken(
         provider: OAuthProvider.google,
@@ -67,16 +79,35 @@ class AuthService {
       );
 
       debugPrint('✅ Supabase sign-in success: ${response.user?.email}');
+
+      // First-time Google sign-in won't have a `profiles` row yet — seed
+      // one from the Google account's display name/avatar so the rest of
+      // the app (anything reading getProfile()) has real data immediately
+      // instead of nulls until the user manually edits their profile.
+      final user = response.user;
+      if (user != null) {
+        try {
+          await _supabase.from('profiles').upsert({
+            'id': user.id,
+            'username': googleUser.displayName ?? user.email,
+            'avatar_url': googleUser.photoUrl,
+          }, onConflict: 'id', ignoreDuplicates: false);
+        } catch (e) {
+          // Non-fatal — the session is already valid even if this fails.
+          debugPrint('🟡 Could not seed profile row: $e');
+        }
+      }
+
       return response;
     } on GoogleSignInException catch (e) {
-      debugPrint(' GoogleSignInException: ${e.code} - ${e.toString()}');
+      debugPrint('GoogleSignInException: ${e.code} - ${e.toString()}');
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        debugPrint(' User cancelled — returning null');
+        debugPrint('User cancelled — returning null');
         return null;
       }
       rethrow;
     } catch (e) {
-      debugPrint('Unexpected error in GoogleAuthService.signIn(): $e');
+      debugPrint('Unexpected error in AuthService.signInWithGoogle(): $e');
       rethrow;
     }
   }
@@ -92,17 +123,17 @@ class AuthService {
       );
 
       final user = response.user;
-
       if (user != null) {
-        debugPrint('Signup successful: ${user.id}');
+        debugPrint('Sign-in successful: ${user.id}');
       }
       return response;
     } on AuthException catch (e) {
-      debugPrint('Signup error: ${e.message}');
+      debugPrint('Sign-in error: ${e.message}');
+      rethrow; // let the caller surface the real error, not a silent null
     } catch (e) {
       debugPrint('Unexpected error: $e');
+      rethrow;
     }
-    return null;
   }
 
   static Future<AuthResponse?> signUpWithEmailPassword({
@@ -143,9 +174,10 @@ class AuthService {
     return _supabase.auth.resend(type: OtpType.signup, email: email);
   }
 
-  Future<void> signInWithApple() async =>
-      _client.auth.signInWithOAuth(OAuthProvider.apple,
-          redirectTo: 'io.supabase.habitflow://login-callback/');
+  Future<void> signInWithApple() async => _client.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: 'io.supabase.habitflow://login-callback/',
+      );
 
   Future<void> updatePassword(String newPassword) async =>
       _client.auth.updateUser(UserAttributes(password: newPassword));
@@ -171,12 +203,13 @@ class AuthService {
     }
   }
 
-  /// signUp with Password
-
   Future<void> signOut() => _client.auth.signOut();
 
-  Future<void> _upsertProfile(String uid, String? username,
-          {String? avatarUrl}) =>
+  Future<void> _upsertProfile(
+    String uid,
+    String? username, {
+    String? avatarUrl,
+  }) =>
       _client.from('profiles').upsert({
         'id': uid,
         if (username != null) 'username': username,

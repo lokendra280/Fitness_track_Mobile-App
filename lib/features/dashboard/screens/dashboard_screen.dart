@@ -6,6 +6,8 @@ import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/features/ai_plan/providers/weekly_workout_provider.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/feedback_promot.dart';
+import 'package:habitflow/features/dashboard/screens/widgets/feedback_sheet.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/greeting_header.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/log_weight_sheet.dart';
@@ -23,10 +25,10 @@ import '../providers/dashboard_providers.dart';
 
 /// "Home Dashboard" screen — matches the first reference mock, wired to
 /// the real dashboardDataProvider.
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
-  List<ProgressMetric> _metrics(DashboardData data, int realSteps) {
+  List<ProgressMetric> metrics(DashboardData data, int realSteps) {
     final waterCurrent = (data.waterProgress * data.waterTarget).round();
     final stepsProgress = (realSteps / data.stepTarget).clamp(0.0, 1.0);
     return [
@@ -66,10 +68,28 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        if (FeedbackPromptService.shouldShowToday) {
+          showFeedbackSheet(context, isDailyPrompt: true);
+        }
+      });
+    });
+  }
+
+  Widget build(BuildContext context) {
     final data = ref.watch(dashboardDataProvider);
     final realSteps = ref.watch(todayStepsProvider).valueOrNull ?? 0;
-    final metrics = _metrics(data, realSteps);
+    final metrics = widget.metrics(data, realSteps);
 
     final sections = <Widget>[
       GreetingHeader(
@@ -101,36 +121,7 @@ class DashboardScreen extends ConsumerWidget {
           );
         },
       ),
-      // JourneyCard(
-      //   progress: data.progressPercentage ?? 0,
-      //   currentWeight: data.currentWeight,
-      //   targetWeight: data.targetWeight,
-      //   weightLost: data.weightLost,
-      //   daysRemaining: data.daysRemaining,
-      //   streak: data.journeyStreak,
-      //   remainingWeight: data.remainingWeight,
-      //   onMenuTap: () {},
-      // ),
-      // const SizedBox(height: 24),
-      // SectionHeader(
-      //   title: "Today's progress",
-      //   actionLabel: 'View all',
-      //   onActionTap: () => ref.read(bottomNavIndexProvider.notifier).state = 1,
-      // ),
-      // const SizedBox(height: 8),
-      // Card(
-      //   child: Padding(
-      //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      //     child: Column(
-      //       children: [
-      //         for (var i = 0; i < metrics.length; i++) ...[
-      //           MetricProgressRow(metric: metrics[i]),
-      //           if (i != metrics.length - 1) const Divider(height: 1),
-      //         ],
-      //       ],
-      //     ),
-      //   ),
-      // ),
+
       SBC.lH,
 
       // AiInsightCard(onTap: () => context.push('/weekly-review')),

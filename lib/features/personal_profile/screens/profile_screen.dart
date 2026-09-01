@@ -29,24 +29,24 @@ class ProfileScreen extends ConsumerWidget {
                     onEditTap: () => context.push(AppRoutes.aiCoach),
                   ),
                   const SizedBox(height: 22),
-                  ProfileMenuTile(
-                    icon: Icons.workspace_premium_outlined,
-                    label: 'Subscription',
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 12),
-                  ProfileMenuTile(
-                    icon: Icons.watch_outlined,
-                    label: 'Connected Device',
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 12),
-                  ProfileMenuTile(
-                    icon: Icons.settings_outlined,
-                    label: 'Settings',
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 12),
+                  // ProfileMenuTile(
+                  //   icon: Icons.workspace_premium_outlined,
+                  //   label: 'Subscription',
+                  //   onTap: () {},
+                  // ),
+                  // const SizedBox(height: 12),
+                  // ProfileMenuTile(
+                  //   icon: Icons.watch_outlined,
+                  //   label: 'Connected Device',
+                  //   onTap: () {},
+                  // ),
+                  // const SizedBox(height: 12),
+                  // ProfileMenuTile(
+                  //   icon: Icons.settings_outlined,
+                  //   label: 'Settings',
+                  //   onTap: () {},
+                  // ),
+                  // const SizedBox(height: 12),
                   ProfileMenuTile(
                     icon: Icons.logout_rounded,
                     label: 'Log Out',
