@@ -5,13 +5,10 @@ import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
 import 'package:habitflow/features/ai_plan/providers/weekly_workout_provider.dart';
-import 'package:habitflow/features/dashboard/screens/widgets/ai_insight_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/feedback_promot.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/feedback_sheet.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/greeting_header.dart';
-import 'package:habitflow/features/dashboard/screens/widgets/journey_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/log_weight_sheet.dart';
-import 'package:habitflow/features/dashboard/screens/widgets/metric_progress_row.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/personal_workout_card.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/quick_actions_grid.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/today_calendar_strip.dart';
@@ -23,8 +20,6 @@ import '../../../data/models/dashboard_data.dart';
 import '../../../data/models/dashboard_ui_models.dart';
 import '../providers/dashboard_providers.dart';
 
-/// "Home Dashboard" screen — matches the first reference mock, wired to
-/// the real dashboardDataProvider.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -96,7 +91,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         userName: '',
         notificationCount: 0,
         onNotificationsTap: () {
-          context.go("/personal-profile");
+          showFeedbackSheet(context, isDailyPrompt: true);
         },
       ),
       const SizedBox(height: 20),
@@ -142,11 +137,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: AppString.trackCalories,
             onTap: () => context.push('/food'),
           ),
-          // QuickAction(
-          //   icon: Icons.camera_alt,
-          //   label: 'Ai Plan',
-          //   onTap: () => context.push('/activity'),
-          // ),
+
           QuickAction(
             icon: Assets.sleep,
             label: 'Sleep Track',
@@ -170,7 +161,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               label: 'Habits',
               onTap: () => context.push('/habits')),
           // QuickAction(
-          //     icon: Icons.checklist,
+          //     icon: Assets.checkIn,
           //     label: 'Daily CheckIn',
           //     onTap: () => context.push('/check-in')),
           // QuickAction(
@@ -183,7 +174,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           //   onTap: () => context.push('/milestones'),
           // ),
           // QuickAction(
-          //   icon: Icons.email_sharp,
+          //   icon: Assets.report,
           //   label: "Journey Completion",
           //   onTap: () => context.push('/journey-completion'),
           // ),
@@ -192,11 +183,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: AppString.stepCounter,
             onTap: () => context.push('step-counter'),
           ),
-          QuickAction(
-            icon: Assets.report,
-            label: 'Report',
-            onTap: () => context.push('/reports'),
-          ),
+          // QuickAction(
+          //   icon: Assets.report,
+          //   label: 'Report',
+          //   onTap: () => context.push('/reports'),
+          // ),
         ],
       ),
     ];

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/food_tracking_provider.dart';
 
-class WeekStrip extends StatelessWidget {
+class WeekStrip extends ConsumerWidget {
   final DateTime selectedDate;
-  const WeekStrip({required this.selectedDate});
+  const WeekStrip({super.key, required this.selectedDate});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -14,21 +16,50 @@ class WeekStrip extends StatelessWidget {
     final weekdayFromSunday = selectedDate.weekday % 7; // Sun=0..Sat=6
     final sunday = selectedDate.subtract(Duration(days: weekdayFromSunday));
 
+    final today = DateTime.now();
+    final todayKey = DateTime(today.year, today.month, today.day);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (i) {
         final day = sunday.add(Duration(days: i));
-        final isToday = day.year == selectedDate.year &&
-            day.month == selectedDate.month &&
-            day.day == selectedDate.day;
-        final isPast = day.isBefore(
-            DateTime(selectedDate.year, selectedDate.month, selectedDate.day));
+        final dayKey = DateTime(day.year, day.month, day.day);
 
-        // TODO: replace with a real "was this day fully logged" check
-        // once a per-day completion provider exists — currently just
-        // marks past days as done and future days as empty, matching
-        // the screenshot's visual pattern without real data behind it.
-        final done = isPast;
+        final isToday = dayKey == todayKey;
+        final isPast = dayKey.isBefore(todayKey);
+        final isFuture = dayKey.isAfter(todayKey);
+
+        // Real per-day check: did the user actually log any food that day?
+        final entries = ref.watch(foodLogProvider(dayKey));
+        final tracked = entries.isNotEmpty;
+
+        // Only past/today days can be judged as "missed" — future days
+        // stay neutral since there's nothing to have tracked yet.
+        final missed = !isFuture && !tracked;
+
+        Color borderColor;
+        Color? fillColor;
+        Widget? child;
+
+        if (tracked) {
+          fillColor = Colors.black;
+          borderColor = Colors.black;
+          child =
+              const Icon(Icons.check_rounded, color: Colors.white, size: 18);
+        } else if (missed) {
+          fillColor = Colors.red.shade50;
+          borderColor = Colors.red;
+          child =
+              Icon(Icons.close_rounded, color: Colors.red.shade400, size: 16);
+        } else {
+          fillColor = Colors.transparent;
+          borderColor = Colors.grey.shade300;
+          child = null;
+        }
+
+        if (isToday) {
+          borderColor = scheme.primary;
+        }
 
         return Column(
           children: [
@@ -40,20 +71,13 @@ class WeekStrip extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: done ? Colors.black : Colors.transparent,
+                color: fillColor,
                 border: Border.all(
-                  color: isToday
-                      ? scheme.primary
-                      : done
-                          ? Colors.black
-                          : Colors.grey.shade300,
+                  color: borderColor,
                   width: isToday ? 2 : 1,
                 ),
               ),
-              child: done
-                  ? const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 18)
-                  : null,
+              child: child,
             ),
           ],
         );

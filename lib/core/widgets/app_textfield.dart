@@ -79,6 +79,15 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        filled: true,
+        fillColor: Theme.of(context).inputDecorationTheme.fillColor,
         prefixIcon: _buildPrefixIcon(),
         prefixIconConstraints: const BoxConstraints(
           minWidth: 40,

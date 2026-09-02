@@ -12,7 +12,7 @@ class AuthService {
 
   static final _supabase = Supabase.instance.client;
   static const _webClientId =
-      '661083503148-cl9ob8dtehf260itnci2lnrmjfvqh1ur.apps.googleusercontent.com';
+      '1087687861671-kec6quofhb4abdkgskgia0imf1m9in4u.apps.googleusercontent.com';
 
   /// google_sign_in v7 requires GoogleSignIn.instance.initialize() to be
   /// called exactly once before any sign-in attempt — calling it again on

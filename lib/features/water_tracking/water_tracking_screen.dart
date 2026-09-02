@@ -24,7 +24,6 @@ class WaterTrackingScreen extends ConsumerWidget {
     final remainingMl = (targetMl - consumedMl).clamp(0, targetMl);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -71,30 +70,6 @@ class WaterTrackingScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             WaterGoalCard(dailyGoalGlasses: glassGoal),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.textPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                onPressed: () {
-                  // TODO: open a "change daily goal" flow. Note: since
-                  // the goal is now plan-derived, this should probably
-                  // open the AiPlan customize sheet (waterTarget field)
-                  // rather than a standalone water-only setting, so the
-                  // two never drift out of sync.
-                },
-                child: Text(
-                  'Change daily goal',
-                  style: AppTypography.labelLarge.copyWith(color: Colors.white),
-                ),
-              ),
-            ),
           ],
         ),
       ),

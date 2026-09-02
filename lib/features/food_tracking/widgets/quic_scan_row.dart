@@ -1,23 +1,18 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:habitflow/features/food_tracking/widgets/food_scan_result.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:habitflow/features/food_tracking/widgets/food_camera_screen.dart';
 
 class QuickScanRow extends ConsumerWidget {
   final DateTime day;
   const QuickScanRow({super.key, required this.day});
 
-  Future<void> _scanPhoto(BuildContext context, WidgetRef ref) async {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.camera, imageQuality: 85);
-    if (picked == null || !context.mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => FoodScanResultSheet(image: File(picked.path), day: day),
+  void _openInAppCamera(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FoodCameraScreen(day: day),
+        fullscreenDialog: true,
+      ),
     );
   }
 
@@ -28,7 +23,7 @@ class QuickScanRow extends ConsumerWidget {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => _scanPhoto(context, ref),
+            onPressed: () => _openInAppCamera(context),
             icon: const Icon(Icons.camera_alt_rounded, size: 18),
             label: const Text('Scan food'),
             style: OutlinedButton.styleFrom(

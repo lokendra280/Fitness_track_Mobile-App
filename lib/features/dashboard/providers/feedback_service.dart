@@ -4,7 +4,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-
 class FeedbackService {
   static Box get _box => Hive.box('feedback_box');
   static const _table = 'app_feedback';
@@ -36,6 +35,7 @@ class FeedbackService {
     }
 
     await Supabase.instance.client.from(_table).insert({
+      'user_id': Supabase.instance.client.auth.currentUser?.id,
       'name': name.trim(),
       'country': country.trim(),
       'message': message.trim(),

@@ -12,7 +12,12 @@
           "package_name": "com.healthflow"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1087687861671-kec6quofhb4abdkgskgia0imf1m9in4u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBLGGMPjnajjnlxE6IxBmUlnFqfeiIJSDQ"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1087687861671-kec6quofhb4abdkgskgia0imf1m9in4u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

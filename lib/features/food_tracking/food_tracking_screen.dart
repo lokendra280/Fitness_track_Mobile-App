@@ -168,13 +168,15 @@ class _TodayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Text(AppString.caloriesTracking, style: text.headlineMedium),
+            Text(
+              AppString.caloriesTracking,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ],
         ),
       ],
